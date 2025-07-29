@@ -1,0 +1,13 @@
+@font-face {
+  font-family: 'MyFont';
+  src: url('./static/BitcountSingle-Black.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+}
+
+
+.hello {
+ font-family: 'MyFont';
+ background: url('./icon.png');
+ color: blue;
+}

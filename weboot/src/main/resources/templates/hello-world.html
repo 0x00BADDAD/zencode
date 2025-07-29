@@ -1,0 +1,26 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <script src="http://localhost:3000/js/runtime.js"> </script>
+    <script src="http://localhost:3000/js/vendors.js"> </script>
+  </head>
+
+  <body>
+    <h1 th:text="${message}"> Default Message </h1>
+    <h1>Actor list from testdb1</h1>
+
+    <table>
+      <tr>
+        <th>First Name</th>
+        <th>Last Name</th>
+      </tr>
+      <tr th:each="actor : ${actors}">
+        <td th:text="${actor.firstName}">Tom</td>
+        <td th:text="${actor.lastName}">Cruise</td>
+      </tr>
+    </table>
+    <hr>
+    <div id="root"> </div>
+    <script src="http://localhost:3000/js/index.js"> </script>
+  </body>
+</html>
