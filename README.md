@@ -3,11 +3,13 @@
 
 This project is a meta project. I intend to consolidate things like blogs, an IDE that can  
 submit code to various platforms instead of locking to one and anything else in between.
+
 ---
 ## Build
 
 I am using [gradle](https://docs.gradle.org/current/userguide/userguide.html) (kotlin DSL) as the build system for springboot backend.  
 For the frontend I am using the well-known [webpack](https://webpack.js.org/) bundler.
+
 ---
 ## Building the project (for dev env only!)
 ### Backend
