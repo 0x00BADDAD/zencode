@@ -1,5 +1,4 @@
 # zencode
----
 
 This project is a meta project. I intend to consolidate things like blogs, an IDE that can  
 submit code to various platforms instead of locking to one and anything else in between.
