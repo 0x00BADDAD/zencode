@@ -12,10 +12,14 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.datasource.init.DataSourceInitializer;
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 
-
+import java.util.concurrent.Executor;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.web.servlet.config.annotation.AsyncSupportConfigurer;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.core.task.AsyncTaskExecutor;
 
 @SpringBootApplication
-public class Application {
+public class Application implements WebMvcConfigurer{
 
     private static final Logger logger = LogManager.getLogger(Application.class);
 
@@ -53,5 +57,20 @@ public class Application {
         return initializer;
     }
 
+
+   @Override
+    public void configureAsyncSupport(AsyncSupportConfigurer configurer) {
+        configurer.setTaskExecutor(createAsyncTaskExecutor());
+    }
+
+    private AsyncTaskExecutor createAsyncTaskExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(10);        // Number of threads to keep in the pool, even if idle
+        executor.setMaxPoolSize(25);        // Maximum number of threads that can be created
+        executor.setQueueCapacity(25);      // Capacity of the queue for tasks waiting to be executed
+        executor.setThreadNamePrefix("MyAsyncTask-"); // A prefix for the thread names
+        executor.initialize();
+        return executor;
+    }
 }
 

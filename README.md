@@ -33,16 +33,17 @@ Finally, run this to serve the backend locally on 8080:
     $ npm install
 ```
 3. Then (first build the bundles and then) invoke the webpack dev server at port 3000 (with react refresh hot reloding enabled).  
-dev server also proxies request to the backedn via the `/api/*` path prefix for any requests that  
+dev server also proxies request to the backend via the `/api/*` path prefix for any requests that  
 the backend normally serves.
 ```bash
     $ npm run build
     $ npm run start
 ```
-4. fetch `http:localhost:3000/api/hello` from you favourite client.
+4. fetch `http:localhost:3000/api/hello` from your favourite client.
 ---
 ## LICENSE
 Check the LICENSE file in the root of the project.
+
 ---
 ## Disclaimer
 This Project is in primitive state. Expect breaking changes!
