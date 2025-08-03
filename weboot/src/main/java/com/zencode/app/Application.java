@@ -18,8 +18,15 @@ import org.springframework.web.servlet.config.annotation.AsyncSupportConfigurer;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.core.task.AsyncTaskExecutor;
 
+import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
+import org.springframework.scheduling.annotation.AsyncConfigurer;
+import org.springframework.scheduling.annotation.EnableAsync;
+
+
+
 @SpringBootApplication
-public class Application implements WebMvcConfigurer{
+@EnableAsync
+public class Application implements WebMvcConfigurer, AsyncConfigurer{
 
     private static final Logger logger = LogManager.getLogger(Application.class);
 
@@ -60,17 +67,27 @@ public class Application implements WebMvcConfigurer{
 
    @Override
     public void configureAsyncSupport(AsyncSupportConfigurer configurer) {
-        configurer.setTaskExecutor(createAsyncTaskExecutor());
+        configurer.setTaskExecutor(getAsyncExecutor());
     }
 
-    private AsyncTaskExecutor createAsyncTaskExecutor() {
+    @Override
+    @Bean
+    public AsyncTaskExecutor getAsyncExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(10);        // Number of threads to keep in the pool, even if idle
-        executor.setMaxPoolSize(25);        // Maximum number of threads that can be created
-        executor.setQueueCapacity(25);      // Capacity of the queue for tasks waiting to be executed
-        executor.setThreadNamePrefix("MyAsyncTask-"); // A prefix for the thread names
+        executor.setCorePoolSize(10);
+        executor.setMaxPoolSize(25);
+        executor.setQueueCapacity(25);
+        executor.setThreadNamePrefix("MyAsyncTask-");
         executor.initialize();
         return executor;
+    }
+
+    @Override
+    public AsyncUncaughtExceptionHandler getAsyncUncaughtExceptionHandler() {
+        return (ex, method, params) -> {
+            System.err.println("Async Error in method: " + method.getName());
+            ex.printStackTrace();
+        };
     }
 }
 

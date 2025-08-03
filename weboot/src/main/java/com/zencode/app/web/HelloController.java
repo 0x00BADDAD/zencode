@@ -3,10 +3,8 @@ package com.zencode.app.web;
 import com.zencode.app.web.RespClass;
 
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.SessionAttributes;
-import org.springframework.web.bind.annotation.SessionAttribute;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
 
 import com.zencode.app.services.ActorService;
 import com.zencode.app.dao.beans.Actor;
@@ -18,12 +16,10 @@ import java.util.Base64;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.support.SessionStatus;
 
 import com.fasterxml.jackson.annotation.JsonView;
 import java.util.concurrent.Callable;
-import org.springframework.web.bind.annotation.ResponseBody;
 
 import org.springframework.web.client.RestClient;
 import org.springframework.http.MediaType;
@@ -31,8 +27,6 @@ import org.springframework.http.MediaType;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -77,21 +71,61 @@ public class HelloController {
 }
 
     @GetMapping("/api/spotify_login_success")
-    public String handleSpotifyLoginSuccess(@SessionAttribute String csrfToken, @RequestParam("code") String authCode, @RequestParam("state") String csrfTokenRecd, SessionStatus status, Model model){
+    public RespClass handleSpotifyLoginSuccess(@SessionAttribute String csrfToken, @RequestParam("code") String authCode, @RequestParam("state") String csrfTokenRecd, SessionStatus status, Model model){
         if (!csrfToken.equals(csrfTokenRecd)){
             // the csrf token recd back from spotify server is not same as generated at my backend.
             status.setComplete();
-            return "error-page";
+            return new RespClass(); // TODO: Implement this template
         }
         status.setComplete(); // clearing session of the temp csrfToken
         
         // THIS IS NOT SAFE AT ALL, ONE MUST NEVER PASS THE CLIENT SECRET IN THE BROWSER!!
-        model.addAttribute("code", authCode);
-        model.addAttribute("client_id", "9469751d45ca49cea94be50c071a3c65");
-        model.addAttribute("client_secret", "6139b2de2c564d9a977f34c3b27fbda4");
-        return "success-page";
-    }
+        //model.addAttribute("code", authCode);
+        //model.addAttribute("client_id", "9469751d45ca49cea94be50c071a3c65");
+        //model.addAttribute("client_secret", "6139b2de2c564d9a977f34c3b27fbda4");
+
+        String clientId = "9469751d45ca49cea94be50c071a3c65";
+        String clientSecret = "6139b2de2c564d9a977f34c3b27fbda4";
+
+
+
+        String inputString = clientId + ":" + clientSecret;
+
+        // Step 2: Get the UTF-8 encoded bytes of the string.
+        // This is equivalent to the JavaScript TextEncoder().
+        byte[] utf8Bytes = inputString.getBytes(StandardCharsets.UTF_8);
+
+        // Step 3: Encode the UTF-8 bytes to Base64.
+        // This is equivalent to the JavaScript btoa() function.
+        String base64String = Base64.getEncoder().encodeToString(utf8Bytes);
+        String authHeader = "Basic " + base64String;
+
+
+
+
+
+        RestClient restClient = RestClient.create();
+
+
+        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+        formData.add("code", authCode);
+        formData.add("grant_type", "authorization_code");
+        formData.add("redirect_uri", "http://127.0.0.1:3000/api/spotify_login_success");
+
+        RespClass resp = restClient.post()
+            .uri("https://accounts.spotify.com/api/token")
+            .accept(MediaType.APPLICATION_JSON)
+            .header("Authorization", authHeader)
+            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+            .body(formData)
+            .retrieve()
+            .body(RespClass.class);
+        logger.debug("resp is retrived and is: %s".format(resp.toString()));
     
+
+        return resp;
+    }
+
     @PostMapping("/api/token")
     @ResponseBody
     @JsonView(RespClass.TokRespJsonView.class)
@@ -114,17 +148,8 @@ public class HelloController {
                 .body(RespClass.class);
             logger.debug("resp is retrived and is: %s".format(resp.toString()));
             return resp;
-            //   RestClient customClient = RestClient.builder()
-            //.requestFactory(new HttpComponentsClientHttpRequestFactory())
-            //.messageConverters(converters -> converters.add(new MyCustomMessageConverter()))
-            //.baseUrl("https://example.com")
-            //.defaultUriVariables(Map.of("variable", "foo"))
-            //.defaultHeader("My-Header", "Foo")
-            //.defaultCookie("My-Cookie", "Bar")
-            //.requestInterceptor(myCustomInterceptor)
-            //.requestInitializer(myCustomInitializer)
-            //.build();
     }
+    
 
 
 }

@@ -21,6 +21,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-jdbc")
     implementation("org.postgresql:postgresql:42.7.3")
     implementation("com.zaxxer:HikariCP:5.1.0")
+    implementation("com.github.ben-manes.caffeine:caffeine:3.1.8")
+    implementation("org.springframework.boot:spring-boot-starter-websocket")
+
 
     // Log4j 2 (optional; Spring Boot uses logback by default)
     implementation("org.apache.logging.log4j:log4j-core:2.20.0")
