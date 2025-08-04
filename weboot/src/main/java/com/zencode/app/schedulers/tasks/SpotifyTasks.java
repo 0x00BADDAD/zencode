@@ -30,6 +30,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import java.util.List;
 import java.util.ArrayList;
 
+import com.zencode.app.ws.handlers.beans.TrackMetadataBean;
+import com.zencode.app.ws.handlers.MyHandler;
+
+
 
 
 @Component
@@ -40,6 +44,9 @@ public class SpotifyTasks {
     private static final Logger logger = LogManager.getLogger(SpotifyTasks.class);
 
     private static final long THIRTY_MINUTES = 1000 * 60 * 30;
+
+    @Autowired
+    private MyHandler myHandler;
 
     @Scheduled(fixedRate = THIRTY_MINUTES)
     public void fetchAccessToken() {
@@ -91,13 +98,14 @@ public class SpotifyTasks {
             if (cachedAccessToken.isPresent()){
                 String accessToken = String.valueOf(cachedAccessToken.get());
                 String authHeader = "Bearer " + accessToken;
+                logger.debug("requesting track metadata from spotify!!");
                 JsonNode root = restClient.get()
                     .uri("https://api.spotify.com/v1/me/player/currently-playing")
                     .accept(MediaType.APPLICATION_JSON)
                     .header("Authorization", authHeader)
                     .retrieve()
                     .body(JsonNode.class);
-
+                if (root != null){
                 String trackUri = root.path("item").path("href").asText();
 
                 JsonNode root_ = restClient.get()
@@ -117,7 +125,15 @@ public class SpotifyTasks {
                         artistsAll.add(artistName);
                     }
                 }
+                TrackMetadataBean trackMetadataBean = new TrackMetadataBean(songName, artistsAll);
                 logger.debug("Song Name: "+ songName + " Artists: "+ artistsAll.toString());
+                myHandler.broadcast(trackMetadataBean);
+                }else{
+                    logger.debug("No song playing right now!");
+                    myHandler.broadcast(new TrackMetadataBean("No music playing right now!", List.of()));
+                }
+            }else{
+                logger.debug("No cached Access Token present!!!");
             }
 
     }

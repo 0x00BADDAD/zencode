@@ -6,12 +6,6 @@ import App1 from './App1';
 
 const root = createRoot(document.getElementById('root'));
 console.log("Yup! this module is loaded from root.js!")
-if (isSuccessPage){
-    root.render(
-        <App1 code={code} client_id={client_id} client_secret={client_secret}/>
-    )
-}else{
-    root.render(
-        <App/>
-    );
-}
+root.render(
+    <App/>
+);

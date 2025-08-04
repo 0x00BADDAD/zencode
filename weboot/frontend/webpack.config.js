@@ -20,8 +20,28 @@ module.exports = {
             context: ['/api'],
             target: 'http://127.0.0.1:8080/',
           },
+         // {
+         //     context: ['/ws1'],
+         //     target: 'http://127.0.0.1:8080/',
+         // },
+          {
+            context: ['/ws1'], // Match the WebSocket endpoint
+            target: 'http://127.0.0.1:8080/',
+            ws: true,               // Enable WebSocket proxying
+            changeOrigin: true,     // Optional but often needed
+          }
       ],
       historyApiFallback: true,
+      //client: {
+      //    webSocketURL: {
+      //      hostname: '127.0.0.1',
+      //      pathname: '/ws',
+      //      password: 'dev-server',
+      //      port: 8080,
+      //      protocol: 'ws',
+      //      username: 'webpack',
+      //},
+   // },
   },
 
   entry: {

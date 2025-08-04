@@ -16,11 +16,12 @@ public class WebSocketConfig implements WebSocketConfigurer {
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        registry.addHandler(myHandler(), "/myHandler");
+        registry.addHandler(myHandler(), "/ws1")
+                .setAllowedOrigins("*");
     }
 
     @Bean
-    public WebSocketHandler myHandler() {
+    public MyHandler myHandler() {
         return new MyHandler();
     }
 }

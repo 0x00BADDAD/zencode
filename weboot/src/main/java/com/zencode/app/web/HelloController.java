@@ -44,10 +44,10 @@ public class HelloController {
 
     @GetMapping("/api/hello")
     public String handleHello(Model model) {
-       model.addAttribute("message", "Hello from here!");
-       List<Actor> actors = actorService.getActors();
-       model.addAttribute("actors", actors);
-       model.addAttribute("isSuccess", false);
+     //  model.addAttribute("message", "Hello from here!");
+     //  List<Actor> actors = actorService.getActors();
+     //  model.addAttribute("actors", actors);
+     //  model.addAttribute("isSuccess", false);
        return "hello-world";  // resolved as hello.html in templates directory
     }
 
