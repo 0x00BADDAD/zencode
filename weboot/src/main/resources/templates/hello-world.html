@@ -29,9 +29,9 @@
       const userEmail = /*[[${userEmail}]]*/ "";
     </script>
     <script src="http://127.0.0.1:3000/js/index.js"> </script>
-   <script src="https://sdk.scdn.co/spotify-player.js"></script>
+    <!-- <script src="https://sdk.scdn.co/spotify-player.js"></script> -->
 
-    <script>
+<!--    <script>
         async function fetchAccessToken(email){
                 const params = new URLSearchParams();
                 params.append('email', email);
@@ -51,8 +51,8 @@
               const token = accessToken;
 
               const oAuthRefersh = async (cb) => {
-                      // const freshToken = await fetchAccessToken(userEmail);
-                      cb(token);
+                      const freshToken = await fetchAccessToken(userEmail);
+                      cb(freshToken);
               };
 
                 const player = new Spotify.Player({
@@ -61,7 +61,7 @@
                     volume: 0.8
                 });
 
-                // Ready
+              // Ready
               const readyCb = async ({device_id}) => {
                     console.log('Ready with Device ID', device_id); //  this is what you use
                     // transferring playback
@@ -76,7 +76,8 @@
                     const resp_ = await resp.json();
                     console.log(`Transferred playback! response: ${resp_}`);
 
-              };
+                };
+
                 player.addListener('ready', readyCb);
 
                 // Not Ready
@@ -99,6 +100,6 @@
 
                 player.connect();
             }
-    </script>
+</script> -->
   </body>
 </html>

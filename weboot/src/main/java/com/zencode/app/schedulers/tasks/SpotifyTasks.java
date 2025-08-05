@@ -49,7 +49,7 @@ public class SpotifyTasks {
     private MyHandler myHandler;
 
 
-    @Scheduled(fixedRate = 1000)
+    @Scheduled(fixedRate = 5000)
     public void fetchCurrSong(){
             String accessToken = cacheService.getAccessToken("admin");
             RestClient restClient = RestClient.create();

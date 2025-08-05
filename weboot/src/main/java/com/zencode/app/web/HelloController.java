@@ -43,8 +43,8 @@ import com.zencode.app.web.ReqBody;
 @Controller
 @SessionAttributes("csrfToken")
 public class HelloController {
-    @Autowired
-    private ActorService actorService;
+    //@Autowired
+    //private ActorService actorService;
 
     @Autowired
     private CacheService cacheService;
@@ -111,7 +111,7 @@ public class HelloController {
             // To store the refresh token and access token for this user.
             String accessToken = resp.getAccessToken();
             String refreshToken = resp.getRefreshToken();
-            logger.debug("Refresh Token with playback rights!!!!! " + refreshToken);
+            logger.debug("Refresh Token with playback rights!!!!! copy this ASAP    " + refreshToken);
 
             String accessTokenHeader = "Bearer " + accessToken;
 
