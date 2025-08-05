@@ -46,11 +46,6 @@ public class HelloController {
     @Autowired
     private ActorService actorService;
 
-    //@Autowired
-    //private Cache myCache;
-
-   // @Autowired
-   // private CacheManager cacheManager;
     @Autowired
     private CacheService cacheService;
 
@@ -59,13 +54,7 @@ public class HelloController {
 
     @GetMapping("/api/hello")
     public String handleHello(Model model) {
-     //  model.addAttribute("message", "Hello from here!");
-     //  List<Actor> actors = actorService.getActors();
-     //  model.addAttribute("actors", actors);
-     //  model.addAttribute("isSuccess", false);
-
         return "hello-world";  // resolved as hello.html in templates directory
-
     }
 
     @GetMapping("/api/spotify_login_once")
@@ -185,10 +174,6 @@ public class HelloController {
         }
         status.setComplete(); // clearing session of the temp csrfToken
         
-        // THIS IS NOT SAFE AT ALL, ONE MUST NEVER PASS THE CLIENT SECRET IN THE BROWSER!!
-        //model.addAttribute("code", authCode);
-        //model.addAttribute("client_id", "9469751d45ca49cea94be50c071a3c65");
-        //model.addAttribute("client_secret", "6139b2de2c564d9a977f34c3b27fbda4");
 
         String clientId = "9469751d45ca49cea94be50c071a3c65";
         String clientSecret = "6139b2de2c564d9a977f34c3b27fbda4";
@@ -196,19 +181,9 @@ public class HelloController {
 
 
         String inputString = clientId + ":" + clientSecret;
-
-        // Step 2: Get the UTF-8 encoded bytes of the string.
-        // This is equivalent to the JavaScript TextEncoder().
         byte[] utf8Bytes = inputString.getBytes(StandardCharsets.UTF_8);
-
-        // Step 3: Encode the UTF-8 bytes to Base64.
-        // This is equivalent to the JavaScript btoa() function.
         String base64String = Base64.getEncoder().encodeToString(utf8Bytes);
         String authHeader = "Basic " + base64String;
-
-
-
-
 
         RestClient restClient = RestClient.create();
 
@@ -255,8 +230,6 @@ public class HelloController {
             logger.debug("resp is retrived and is: %s".format(resp.toString()));
             return resp;
     }
-    
-
 
 }
 

@@ -42,7 +42,6 @@ public class CacheService {
     public void setRefreshToken(String email, String token){
 
             CaffeineCache myCache1 = (CaffeineCache) cacheManager.getCache("refreshTokenCache");
-            //String email = root.path("email").asText();
             Cache<Object, Object> nativeCache = myCache1.getNativeCache();
             nativeCache.put(email, token);
 
@@ -51,7 +50,6 @@ public class CacheService {
 
     public void setAccessToken(String email, String token){
             CaffeineCache myCache1 = (CaffeineCache) cacheManager.getCache("accessTokenCache");
-            //String email = root.path("email").asText();
             Cache<Object, Object> nativeCache = myCache1.getNativeCache();
             nativeCache.put(email, token);
 
