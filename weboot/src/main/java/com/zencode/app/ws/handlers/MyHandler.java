@@ -40,7 +40,7 @@ public class MyHandler extends TextWebSocketHandler {
     }
 
     public void broadcast(TrackMetadataBean message) {
-        logger.debug("broadcasting message to clients with count " + sessions.size());
+        //logger.debug("broadcasting message to clients with count " + sessions.size());
 
         for (WebSocketSession session : sessions.values()) {
             try {

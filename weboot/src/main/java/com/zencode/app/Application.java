@@ -21,11 +21,13 @@ import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
 import org.springframework.scheduling.annotation.AsyncConfigurer;
 import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.cache.annotation.EnableCaching;
 
 
 
 @SpringBootApplication
 @EnableAsync
+@EnableCaching
 public class Application implements WebMvcConfigurer, AsyncConfigurer{
 
     private static final Logger logger = LogManager.getLogger(Application.class);

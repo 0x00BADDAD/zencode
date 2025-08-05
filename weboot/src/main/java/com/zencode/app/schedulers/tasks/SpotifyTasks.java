@@ -32,80 +32,37 @@ import java.util.ArrayList;
 
 import com.zencode.app.ws.handlers.beans.TrackMetadataBean;
 import com.zencode.app.ws.handlers.MyHandler;
-
+import com.zencode.app.services.CacheService;
 
 
 
 @Component
 public class SpotifyTasks {
+
     @Autowired
-    private Cache myCache;
+    private CacheService cacheService;
 
     private static final Logger logger = LogManager.getLogger(SpotifyTasks.class);
 
-    private static final long THIRTY_MINUTES = 1000 * 60 * 30;
 
     @Autowired
     private MyHandler myHandler;
 
-    @Scheduled(fixedRate = THIRTY_MINUTES)
-    public void fetchAccessToken() {
-            RestClient restClient = RestClient.create();
-            Optional<Object> cachedRefreshToken = Optional.ofNullable(myCache.getIfPresent("refreshToken"));
-            if (cachedRefreshToken.isPresent()){
-                String clientId = "9469751d45ca49cea94be50c071a3c65";
-                String clientSecret = "6139b2de2c564d9a977f34c3b27fbda4";
-
-
-
-                String inputString = clientId + ":" + clientSecret;
-
-                // Step 2: Get the UTF-8 encoded bytes of the string.
-                // This is equivalent to the JavaScript TextEncoder().
-                byte[] utf8Bytes = inputString.getBytes(StandardCharsets.UTF_8);
-
-                // Step 3: Encode the UTF-8 bytes to Base64.
-                // This is equivalent to the JavaScript btoa() function.
-                String base64String = Base64.getEncoder().encodeToString(utf8Bytes);
-                String authHeader = "Basic " + base64String;
-                MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-
-                formData.add("grant_type", "refresh_token");
-                formData.add("refresh_token", String.valueOf(cachedRefreshToken.get()));
-
-
-                RespClass resp = restClient.post()
-                    .uri("https://accounts.spotify.com/api/token")
-                    .accept(MediaType.APPLICATION_JSON)
-                    .header("Authorization", authHeader)
-                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                    .body(formData)
-                    .retrieve()
-                    .body(RespClass.class);
-                logger.debug("---->scheduler [ref token] worked... resp is: %s".format(resp.toString()));
-                myCache.put("accessToken", resp.getAccessToken());
-
-           }else{
-               logger.debug("Cache doesn't have refresh token!");
-           }
-    }
 
     @Scheduled(fixedRate = 1000)
     public void fetchCurrSong(){
+            String accessToken = cacheService.getAccessToken("admin");
             RestClient restClient = RestClient.create();
-            Optional<Object> cachedAccessToken = Optional.ofNullable(myCache.getIfPresent("accessToken"));
            // TODO: proper error handling on all scheduled tasks 
-            if (cachedAccessToken.isPresent()){
-                String accessToken = String.valueOf(cachedAccessToken.get());
-                String authHeader = "Bearer " + accessToken;
-                logger.debug("requesting track metadata from spotify!!");
-                JsonNode root = restClient.get()
-                    .uri("https://api.spotify.com/v1/me/player/currently-playing")
-                    .accept(MediaType.APPLICATION_JSON)
-                    .header("Authorization", authHeader)
-                    .retrieve()
-                    .body(JsonNode.class);
-                if (root != null){
+            String authHeader = "Bearer " + accessToken;
+            //logger.debug("requesting track metadata from spotify!!");
+            JsonNode root = restClient.get()
+                .uri("https://api.spotify.com/v1/me/player/currently-playing")
+                .accept(MediaType.APPLICATION_JSON)
+                .header("Authorization", authHeader)
+                .retrieve()
+                .body(JsonNode.class);
+            if (root != null){
                 String trackUri = root.path("item").path("href").asText();
 
                 JsonNode root_ = restClient.get()
@@ -126,19 +83,12 @@ public class SpotifyTasks {
                     }
                 }
                 TrackMetadataBean trackMetadataBean = new TrackMetadataBean(songName, artistsAll);
-                logger.debug("Song Name: "+ songName + " Artists: "+ artistsAll.toString());
+                //logger.debug("Song Name: "+ songName + " Artists: "+ artistsAll.toString());
                 myHandler.broadcast(trackMetadataBean);
-                }else{
-                    logger.debug("No song playing right now!");
-                    myHandler.broadcast(new TrackMetadataBean("No music playing right now!", List.of()));
-                }
             }else{
-                logger.debug("No cached Access Token present!!!");
+                //logger.debug("No song playing right now!");
+                myHandler.broadcast(new TrackMetadataBean("No music playing right now!", List.of()));
             }
 
     }
-    //@Scheduled(cron = "0 */1 * * * *")
-    //public void runEveryMinute() {
-    //    System.out.println("Task every minute: " + Thread.currentThread().getName());
-    //}
 }

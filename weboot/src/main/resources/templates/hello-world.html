@@ -20,11 +20,85 @@
       </tr>
     </table>
     <hr>
-    <div id="root" th:text="${message}"> Default Message </div>
+    <div id="root" th:text="${message}"> Default Message </div> -->
+    <div id="root"> </div>
     <script th:inline="javascript">
       const isSuccessPage = /*[[${isSuccess}]]*/ false;
-    </script> -->
-    <div id="root"> </div>
+      const userGrantedPermission = /*[[${userGrantedPermission}]]*/ false;
+      const accessToken =  /*[[${accessToken}]]*/ null;
+      const userEmail = /*[[${userEmail}]]*/ "";
+    </script>
     <script src="http://127.0.0.1:3000/js/index.js"> </script>
+   <script src="https://sdk.scdn.co/spotify-player.js"></script>
+
+    <script>
+        async function fetchAccessToken(email){
+                const params = new URLSearchParams();
+                params.append('email', email);
+                const resp = await fetch(`http://127.0.0.1:3000/api/fresh_token?${params.toString()}`, {
+                    method: "GET"
+                });
+                const token = await resp.json();
+                return token.access_token;
+        }
+
+            window.onSpotifyWebPlaybackSDKReady = () => {
+                if (!userGrantedPermission) {
+                      console.warn("User did not grant permission. Skipping player init.");
+                      return;
+                }
+              //const token = 'BQC-uSfZKu7nIgOmAw_KIjcc05DorR0Z_pGuld9cDJCQNRmqwLoizjYhWOkjJ0rC73YqIbrqFntrkNcSSFIeA9fkGI60gAK6CgJDdgHdZd-O06kRNDQMqyvUsfD91MAS30R0x_VR0pZoTpiASWuX3IE5wMVNHsyNihxhBm8OTWGjE_GB_ZJ9_VTkoi4dCbE1CavgbzvZpgkg6VXvgmcIn3PjBDXcSMq5Oakbt99ZS5BJ80d4OyNqwJrEikgw6eYCp4He1Lpl1cS8N9xxOvEmFh4XiiyMEKYVz43-vf38wzQ_Dnb5694hMhru81Ja_maF';
+              const token = accessToken;
+
+              const oAuthRefersh = async (cb) => {
+                      // const freshToken = await fetchAccessToken(userEmail);
+                      cb(token);
+              };
+
+                const player = new Spotify.Player({
+                    name: 'Web Playback SDK Quick Start Player',
+                    getOAuthToken: oAuthRefersh,
+                    volume: 0.8
+                });
+
+                // Ready
+              const readyCb = async ({device_id}) => {
+                    console.log('Ready with Device ID', device_id); //  this is what you use
+                    // transferring playback
+                    const resp = await fetch('http://127.0.0.1:3000/api/transfer_playback', {
+                    method: 'POST',
+                    body: JSON.stringify({ device_ids: [device_id], play: true }),
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'X-Token': `${token}`
+                      },
+                    });
+                    const resp_ = await resp.json();
+                    console.log(`Transferred playback! response: ${resp_}`);
+
+              };
+                player.addListener('ready', readyCb);
+
+                // Not Ready
+                player.addListener('not_ready', ({ device_id }) => {
+                    console.log('Device ID has gone offline', device_id);
+                });
+
+                player.addListener('initialization_error', ({ message }) => {
+                    console.error(message);
+                });
+
+                player.addListener('authentication_error', ({ message }) => {
+                    console.error(message);
+                });
+
+                player.addListener('account_error', ({ message }) => {
+                    console.error(message);
+                });
+
+
+                player.connect();
+            }
+    </script>
   </body>
 </html>
