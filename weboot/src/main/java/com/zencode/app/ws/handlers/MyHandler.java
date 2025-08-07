@@ -26,7 +26,7 @@ public class MyHandler extends TextWebSocketHandler {
         logger.debug("got a connection to the web socket endpoint!");
         WebSocketSession safeSession = new ConcurrentWebSocketSessionDecorator(
             session,
-            10_000,  // send timeout in ms
+            20_000,  // send timeout in ms
             1024     // buffer size in bytes
         );
         sessions.put(session.getId(), safeSession);

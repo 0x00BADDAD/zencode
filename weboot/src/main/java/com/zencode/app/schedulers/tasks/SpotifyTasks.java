@@ -34,10 +34,16 @@ import com.zencode.app.ws.handlers.beans.TrackMetadataBean;
 import com.zencode.app.ws.handlers.MyHandler;
 import com.zencode.app.services.CacheService;
 
+import org.springframework.web.bind.annotation.PathVariable;
+import com.zencode.app.shared.SharedTrackMetaDataHolder;
+
 
 
 @Component
 public class SpotifyTasks {
+
+    @Autowired
+    private SharedTrackMetaDataHolder trackMetaDataHolder;
 
     @Autowired
     private CacheService cacheService;
@@ -53,9 +59,9 @@ public class SpotifyTasks {
     public void fetchCurrSong(){
             String accessToken = cacheService.getAccessToken("admin");
             RestClient restClient = RestClient.create();
-           // TODO: proper error handling on all scheduled tasks 
+           // TODO: proper error handling on all scheduled tasks
             String authHeader = "Bearer " + accessToken;
-            //logger.debug("requesting track metadata from spotify!!");
+            logger.debug("requesting track metadata from spotify!!");
             JsonNode root = restClient.get()
                 .uri("https://api.spotify.com/v1/me/player/currently-playing")
                 .accept(MediaType.APPLICATION_JSON)
@@ -63,31 +69,44 @@ public class SpotifyTasks {
                 .retrieve()
                 .body(JsonNode.class);
             if (root != null){
-                String trackUri = root.path("item").path("href").asText();
+                String trackHref = root.path("item").path("href").asText();
+                String trackUri = root.path("item").path("album").path("uri").asText();
+                Integer discNumber = root.path("item").path("track_number").asInt();
+                Integer progress_ms = root.path("progress_ms").asInt();
+                boolean isPlaying = root.path("is_playing").asBoolean();
 
-                JsonNode root_ = restClient.get()
-                   .uri(trackUri)
-                   .accept(MediaType.APPLICATION_JSON)
-                   .header("Authorization", authHeader)
-                   .retrieve()
-                   .body(JsonNode.class);
+                String songName = root.path("item").path("name").asText();
 
-                String songName = root_.path("name").asText();
+                String[] uriParts = trackUri.split(":");
+                logger.debug("The type of Spotify URI received is: " + uriParts[1]);
+
+               // RestClient restClient_ = RestClient.create();
+               // JsonNode root_ = restClient_.get()
+               //    .uri(trackHref)
+               //    .accept(MediaType.APPLICATION_JSON)
+               //    .header("Authorization", authHeader)
+               //    .retrieve()
+               //    .body(JsonNode.class);
+
+               // String songName = root_.path("name").asText();
                 List<String> artistsAll = new ArrayList<>();
 
-                JsonNode artists = root_.path("artists");
+               // JsonNode artists = root_.path("artists");
+                JsonNode artists = root.path("item").path("artists");
+
                 if (artists.isArray()){
                     for (JsonNode artist: artists){
                         String artistName = artist.path("name").asText();
                         artistsAll.add(artistName);
                     }
                 }
-                TrackMetadataBean trackMetadataBean = new TrackMetadataBean(songName, artistsAll);
-                //logger.debug("Song Name: "+ songName + " Artists: "+ artistsAll.toString());
+                TrackMetadataBean trackMetadataBean = new TrackMetadataBean(songName, artistsAll, trackUri, progress_ms, isPlaying, discNumber);
+                logger.debug("Song Name: "+ songName + " Artists: "+ artistsAll.toString());
+                trackMetaDataHolder.setData(trackMetadataBean);
                 myHandler.broadcast(trackMetadataBean);
             }else{
-                //logger.debug("No song playing right now!");
-                myHandler.broadcast(new TrackMetadataBean("No music playing right now!", List.of()));
+                logger.debug("No song playing right now!");
+                myHandler.broadcast(new TrackMetadataBean("No music playing right now!", List.of(), "No-track", 0, false, 0));
             }
 
     }

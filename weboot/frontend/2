@@ -21,19 +21,9 @@ export default function SpotifyPLayer(){
     const [deviceIds, setDeviceIds] = useState([]);
     const [activeDeviceId, setActiveDeviceId] = useState(null);
     const [outOfSync, setOutOfSync] = useState(false);
-    const [keepInSync, setKeepInSync] = useState(false);
     // currTrackUri is the most updated value of the playerUri
     const currTrackMetaData = useContext(TrackMetaDataContext);
-
-    const initialMetaData = {
-       track_uri: "No uri",
-       progress_ms: 0,
-       name: "No Name",
-       is_playing: false,
-       artists: []
-    };
-
-    const [metaData, setMetaData] = useState(initialMetaData);
+    const [metaData, setMetaData] = useState(currTrackMetaData);
     //const [playerUri, setPlayerUri] = useState(currTrackMetaData.track_uri);
     // const [playerUri, setPlayerUri] = useState('');
 
@@ -69,24 +59,9 @@ export default function SpotifyPLayer(){
     }
 
 
-    if(!(currTrackMetaData.track_uri && currTrackMetaData.track_uri === metaData.track_uri && Math.abs(currTrackMetaData.progress_ms-metaData.progress_ms) < 15000 )){
-        if (keepInSync){
-            console.log("called the keepinSync syncTrack");
-            (async ()=>{
-            await syncTrack(currTrackMetaData.track_uri, currTrackMetaData.progress_ms, currTrackMetaData.is_playing, currTrackMetaData.disc_number);
-            })();
-        }else{
-            //setOutOfSync(true);
-        }
+    if(!outOfSync && !(currTrackMetaData.track_uri === metaData.track_uri && currTrackMetaData.progress_ms === metaData.progress_ms && currTrackMetaData.is_playing === metaData.is_playing)){
+        setOutOfSync(true);
     }
-
-   // if(outOfSync && keepInSync){
-   //     (async ()=>{
-   //     await syncTrack(currTrackMetaData.track_uri, currTrackMetaData.progress_ms, currTrackMetaData.is_playing, currTrackMetaData.disc_number);
-   //     })();
-   //     setOutOfSync(false);
-   // }
-    let statePollingInterval = null;
 
     useEffect(() => {
             window.onSpotifyWebPlaybackSDKReady = () => {
@@ -103,7 +78,7 @@ export default function SpotifyPLayer(){
               };
 
             const player = new Spotify.Player({
-                name: 'Sync with Atharv -- Playback',
+                name: 'Web Playback Spotify Player',
                 getOAuthToken: oAuthRefersh,
                 volume: 0.8
             });
@@ -128,30 +103,28 @@ export default function SpotifyPLayer(){
 
                 player.addListener('ready', readyCb);
 
-                // Start polling every second
-                    statePollingInterval = setInterval(() => {
-                      player.getCurrentState().then(state => {
-                        if (!state) {
-                          console.warn('No state available (maybe not playing yet)');
-                          return;
-                        }
+                player.addListener('player_state_changed', (state) => {
+                    if(state){
+                        // to set-up the meta data of this component
+                        player.getCurrentState().then(state_ => {
+                          // To set the new metaData but unfortunately, Spotify API sucks
+                            // and we'd have to make an extra network call just to get the
+                            // index of the song into the album.
+                            const resp = await fetch(`http://127.0.0.1:3000/api/${}`);
+                           const newMetaData = {
+                               track_uri: state_.context.uri,
+                               progress_ms: state_.position,
+                               name: state_.track_window.current_track.name,
+                               is_playing: !state_.paused,
+                               artists: state_.track_window.current_track.artists.map(artist => {
+                                   return artist.name;
+                               });
+                           };
 
-                       const track = state.track_window.current_track;
-                       const newMetaData = {
-                           track_uri: state.context.uri,
-                           progress_ms: state.position,
-                           name: state.track_window.current_track.name,
-                           is_playing: !state.paused,
-                           artists: state.track_window.current_track.artists.map(artist => {
-                               return artist.name;
-                           })
-                       };
+                        });
+                    }
 
-                        //console.log(`🎵 ${track.name} - ${positionMs / 1000}s / ${durationMs / 1000}s`);
-                        // Update your UI here
-                          setMetaData(prev => newMetaData);
-                      });
-                    }, 1000);
+                });
 
                 // Not Ready
                 player.addListener('not_ready', ({ device_id }) => {
@@ -180,11 +153,6 @@ export default function SpotifyPLayer(){
                     setPlayerRef(player);
                 });
             }
-           window.addEventListener('beforeunload', () => {
-                if (statePollingInterval) {
-                  clearInterval(statePollingInterval);
-                }
-          });
 
             // load the external spotify script after defining the SDK callback as done above
             const script = document.createElement('script');
@@ -202,17 +170,15 @@ export default function SpotifyPLayer(){
     }, []);
 
     const prettyJson = JSON.stringify(metaData,undefined, 2);
-    const shouldSync = !(currTrackMetaData.track_uri && currTrackMetaData.track_uri === metaData.track_uri && Math.abs(currTrackMetaData.progress_ms-metaData.progress_ms) < 15000 );
+
     return (<>
         <p> Playing on your device:</p> <pre>{prettyJson}</pre>
-        {shouldSync &&
+        {outOfSync &&
             <button onClick={() => syncTrack(currTrackMetaData.track_uri, currTrackMetaData.progress_ms, currTrackMetaData.is_playing, currTrackMetaData.disc_number)}>
             Sync In!
         </button>
         }
-        {!keepInSync && <button onClick={() => nextTrack()}>Next track</button>}
-        {!keepInSync ? <button onClick={() => setKeepInSync(true)}>Keep in Sync!</button>:
-            <button onClick={() => setKeepInSync(false)}>Out of Sync</button>}
+        <button onClick={() => nextTrack()}>Next track</button>
 
     </>
     )

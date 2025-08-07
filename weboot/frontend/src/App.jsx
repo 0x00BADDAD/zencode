@@ -4,15 +4,18 @@ import AutoTyping from './AutoTyping';
 import SpotifyLogin from './SpotifyLogin.jsx';
 import SpotifyTrack from './SpotifyTrack.jsx';
 import SpotifyPlayer from './SpotifyPlayer.jsx';
+import TrackMetaDataProvider from './Providers/TrackMetaDataProvider.jsx';
 
 function App() {
 
     return (
     <>
-        <SpotifyTrack/>
-        <SpotifyLogin/>
-        {/*userGrantedPermission &&
-        <SpotifyPlayer/>*/}
+        <TrackMetaDataProvider initialTrackMetaData={initialTrackMetaData}>
+            <SpotifyTrack/>
+            <SpotifyLogin/>
+            {userGrantedPermission &&
+            <SpotifyPlayer/>}
+        </TrackMetaDataProvider>
     </>
     )
 }

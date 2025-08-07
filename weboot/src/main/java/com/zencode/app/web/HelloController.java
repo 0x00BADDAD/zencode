@@ -27,7 +27,8 @@ import org.springframework.http.MediaType;
 
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -37,14 +38,27 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.Optional;
 import com.zencode.app.services.CacheService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 import com.zencode.app.web.ReqBody;
+import java.util.List;
+import java.util.ArrayList;
+
+
+import com.zencode.app.ws.handlers.beans.TrackMetadataBean;
+import org.springframework.web.bind.annotation.PathVariable;
+import com.zencode.app.shared.SharedTrackMetaDataHolder;
+
+
 
 @Controller
 @SessionAttributes("csrfToken")
 public class HelloController {
     //@Autowired
     //private ActorService actorService;
+
+    @Autowired
+    private SharedTrackMetaDataHolder trackMetaDataHolder;
 
     @Autowired
     private CacheService cacheService;
@@ -132,6 +146,65 @@ public class HelloController {
             model.addAttribute("userGrantedPermission", true);
             model.addAttribute("accessToken", accessToken);
             model.addAttribute("userEmail", email);
+            TrackMetadataBean initialTrackMetaData = trackMetaDataHolder.getData();
+            logger.debug("intialTrackMetaData is: " +initialTrackMetaData.toString());
+
+
+
+//            // TODO: Very verbose I am making yet another network call in order to get the initial Track data
+//            accessToken = cacheService.getAccessToken("admin");
+//            //RestClient restClient = RestClient.create();
+//            // TODO: proper error handling on all scheduled tasks
+//            authHeader = "Bearer " + accessToken;
+//            logger.debug("requesting track metadata from spotify in order to include it in front end!!");
+//            root = restClient.get()
+//                .uri("https://api.spotify.com/v1/me/player/currently-playing")
+//                .accept(MediaType.APPLICATION_JSON)
+//                .header("Authorization", authHeader)
+//                .retrieve()
+//                .body(JsonNode.class);
+//
+//
+//            if (root != null){
+//                String trackHref = root.path("item").path("href").asText();
+//                String trackUri = root.path("context").path("uri").asText();
+//                Integer discNumber = root.path("item").path("disc_number").asInt();
+//                Integer progress_ms = root.path("progress_ms").asInt();
+//                boolean isPlaying = root.path("is_playing").asBoolean();
+//
+//
+//
+//                String[] uriParts = trackUri.split(":");
+//                logger.debug("The type of Spotify URI received is: " + uriParts[1]);
+//
+//                JsonNode root_ = restClient.get()
+//                   .uri(trackHref)
+//                   .accept(MediaType.APPLICATION_JSON)
+//                   .header("Authorization", authHeader)
+//                   .retrieve()
+//                   .body(JsonNode.class);
+//
+//                String songName = root_.path("name").asText();
+//                List<String> artistsAll = new ArrayList<>();
+//
+//                JsonNode artists = root_.path("artists");
+//                if (artists.isArray()){
+//                    for (JsonNode artist: artists){
+//                        String artistName = artist.path("name").asText();
+//                        artistsAll.add(artistName);
+//                    }
+//                }
+//                TrackMetadataBean trackMetadataBean = new TrackMetadataBean(songName, artistsAll, trackUri, progress_ms, isPlaying, discNumber);
+//                logger.debug("Song Name: "+ songName + " Artists: "+ artistsAll.toString());
+//                model.addAttribute("initialTrackMetaData", trackMetadataBean);
+//                //myHandler.broadcast(trackMetadataBean);
+//            }else{
+//                logger.debug("No song playing right now! hence passing a rather empty object to frontend");
+//                model.addAttribute("initialTrackMetaData", new TrackMetadataBean("No music playing right now!", List.of(), "No-track", 0, false, 0));
+//            }
+
+            model.addAttribute("initialTrackMetaData", initialTrackMetaData);
+
             return "hello-world";
         }
 }
@@ -164,6 +237,112 @@ public class HelloController {
         return reqBody;
 
     }
+
+    @GetMapping("/api/play_track")
+    public ResponseEntity<Void> handlePlayTrack(@RequestParam("track_uri") String trackUri, @RequestParam("position") Integer position_ms, @RequestParam("email") String email, @RequestParam("is_playing") boolean is_playing, @RequestParam("disc_number") Integer discNumber){
+        String accessToken = cacheService.getAccessToken(email);
+        String authHeader = "Bearer " + accessToken;
+
+        // map for json body
+        Map<String, Object> bodyJson = new HashMap<>();
+        //List<String> uris = List.of(trackUri);
+        bodyJson.put("context_uri", trackUri);
+        bodyJson.put("offset", Map.ofEntries(Map.entry("position", discNumber-1)));
+        bodyJson.put("position_ms", position_ms);
+
+
+        // now do the actual PUT request to the spotify API
+        RestClient restClient = RestClient.create();
+
+        restClient.put()
+            .uri("https://api.spotify.com/v1/me/player/play")
+            .header("Authorization", authHeader)
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(bodyJson)
+            .retrieve()
+            .toBodilessEntity();
+
+        // in case is_playing is false we have to make another request to pause thetrack
+        if(!is_playing){
+            restClient.put()
+                .uri("https://api.spotify.com/v1/me/player/pause")
+                .header("Authorization", authHeader)
+                .retrieve()
+                .toBodilessEntity();
+        }
+
+        return ResponseEntity.ok()
+                .build(); // empty body response
+
+    }
+
+    @GetMapping("/api/next_track")
+    public ResponseEntity<Void> handleNextTrack(@RequestParam("email") String email){
+        logger.debug("The email received in reuqest params is: "+ email);
+        RestClient restClient = RestClient.create();
+        String accessToken = cacheService.getAccessToken(email);
+        restClient.post()
+            .uri("https://api.spotify.com/v1/me/player/next")
+            .header("Authorization", "Bearer " + accessToken)
+            .retrieve()
+            .toBodilessEntity();
+
+
+        return ResponseEntity.ok()
+                .build();
+    }
+
+
+    @GetMapping("/api/{id}")
+    public ResponseEntity<Map<String, Object>> handleIdGen(@PathVariable String id, @RequestParam("email") String email){
+        String accessToken = cacheService.getAccessToken(email);
+
+
+        RestClient restClient = RestClient.create();
+        JsonNode root = restClient.get()
+                            .uri("https://api.spotify.com/v1/tracks/" + id )
+                            .header("Authorization", "Bearer " + accessToken)
+                            .accept(MediaType.APPLICATION_JSON)
+                            .retrieve()
+                            .body(JsonNode.class);
+
+        Integer track_number = root.path("track_number").asInt();
+
+        Map<String, Object> jsonBody = new HashMap<>();
+        jsonBody.put("disc_number", track_number);
+
+        return ResponseEntity.ok(jsonBody);
+    }
+
+
+
+   // @GetMapping("/api/pause_track")
+   // public ResponseEntity<Void> handlePlayTrack(){
+   //     String accessToken = cacheService.getAccessToken(email);
+   //     String authHeader = "Bearer " + accessToken;
+
+   //     // map for json body
+   //     Map<String, Object> bodyJson = new HashMap<>();
+   //     bodyJson.put("context_uri", trackUri);
+   //     bodyJson.put("postion_ms", position_ms);
+
+
+   //     // now do the actual PUT request to the spotify API
+   //     RestClient restClient = RestClient.create();
+
+   //     restClient.put()
+   //         .uri("https://api.spotify.com/v1/me/player/play")
+   //         .header("Authorization", authHeader)
+   //         .contentType(MediaType.APPLICATION_JSON)
+   //         .body(bodyJson)
+   //         .retrieve()
+   //         .toBodilessEntity();
+
+   //     return ResponseEntity.ok()
+   //             .build(); // empty body response
+
+   // }
+
 
     @GetMapping("/api/spotify_login_success")
     public RespClass handleSpotifyLoginSuccess(@SessionAttribute String csrfToken, @RequestParam("code") String authCode, @RequestParam("state") String csrfTokenRecd, SessionStatus status, Model model){
