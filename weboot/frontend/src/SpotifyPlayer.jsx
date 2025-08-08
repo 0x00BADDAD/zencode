@@ -20,8 +20,11 @@ export default function SpotifyPLayer(){
     const [playerRef, setPlayerRef] = useState(null);
     const [deviceIds, setDeviceIds] = useState([]);
     const [activeDeviceId, setActiveDeviceId] = useState(null);
-    const [outOfSync, setOutOfSync] = useState(false);
+    const [outOfSync, setOutOfSync] = useState(true);
     const [keepInSync, setKeepInSync] = useState(false);
+    const [syncing, setSyncing] = useState(false);
+    const [initPlayer, setInitPlayer] = useState(false);
+    const [loadingNextTrack, setLoadingNextTrack] = useState(false);
     // currTrackUri is the most updated value of the playerUri
     const currTrackMetaData = useContext(TrackMetaDataContext);
 
@@ -45,48 +48,31 @@ export default function SpotifyPLayer(){
         params.append('email', userEmail); // this is a global defined in thymeleaf "hello-world" templates...
         params.append('is_playing', is_playing);
         params.append('disc_number', disc_number);
+        setSyncing(true);
         const resp = await fetch(`http://127.0.0.1:3000/api/play_track?${params.toString()}`);
         // only after the above fetch has been done
         if (!resp.ok){
             throw new Error("first fetch to play a new track failed!");
         }
+        setSyncing(false);
 
         // TODO: check if these setStates are batched or not?
-        setOutOfSync(false);
 
-        setMetaData(prev => currTrackMetaData);
+        //setMetaData(prev => currTrackMetaData);
     }
 
     async function nextTrack(){
         const params = new URLSearchParams();
         params.append('email', userEmail);
         // TODO: something to return from this request
+        setLoadingNextTrack(true);
         const resp = await fetch(`http://127.0.0.1:3000/api/next_track?${params.toString()}`);
         if(!resp.ok){
             throw new Error("fetch to play the next track didn't work");
         }
-        setOutOfSync(true);
+        setLoadingNextTrack(false);
+       // setOutOfSync(true);
     }
-
-
-    if(!(currTrackMetaData.track_uri && currTrackMetaData.track_uri === metaData.track_uri && Math.abs(currTrackMetaData.progress_ms-metaData.progress_ms) < 15000 )){
-        if (keepInSync){
-            console.log("called the keepinSync syncTrack");
-            (async ()=>{
-            await syncTrack(currTrackMetaData.track_uri, currTrackMetaData.progress_ms, currTrackMetaData.is_playing, currTrackMetaData.disc_number);
-            })();
-        }else{
-            //setOutOfSync(true);
-        }
-    }
-
-   // if(outOfSync && keepInSync){
-   //     (async ()=>{
-   //     await syncTrack(currTrackMetaData.track_uri, currTrackMetaData.progress_ms, currTrackMetaData.is_playing, currTrackMetaData.disc_number);
-   //     })();
-   //     setOutOfSync(false);
-   // }
-    let statePollingInterval = null;
 
     useEffect(() => {
             window.onSpotifyWebPlaybackSDKReady = () => {
@@ -94,7 +80,6 @@ export default function SpotifyPLayer(){
                       console.warn("User did not grant permission. Skipping player init.");
                       return;
                 }
-              //const token = 'BQC-uSfZKu7nIgOmAw_KIjcc05DorR0Z_pGuld9cDJCQNRmqwLoizjYhWOkjJ0rC73YqIbrqFntrkNcSSFIeA9fkGI60gAK6CgJDdgHdZd-O06kRNDQMqyvUsfD91MAS30R0x_VR0pZoTpiASWuX3IE5wMVNHsyNihxhBm8OTWGjE_GB_ZJ9_VTkoi4dCbE1CavgbzvZpgkg6VXvgmcIn3PjBDXcSMq5Oakbt99ZS5BJ80d4OyNqwJrEikgw6eYCp4He1Lpl1cS8N9xxOvEmFh4XiiyMEKYVz43-vf38wzQ_Dnb5694hMhru81Ja_maF';
               const token = accessToken;
 
               const oAuthRefersh = async (cb) => {
@@ -127,32 +112,6 @@ export default function SpotifyPLayer(){
                 };
 
                 player.addListener('ready', readyCb);
-
-                // Start polling every second
-                    statePollingInterval = setInterval(() => {
-                      player.getCurrentState().then(state => {
-                        if (!state) {
-                          console.warn('No state available (maybe not playing yet)');
-                          return;
-                        }
-
-                       const track = state.track_window.current_track;
-                       const newMetaData = {
-                           track_uri: state.context.uri,
-                           progress_ms: state.position,
-                           name: state.track_window.current_track.name,
-                           is_playing: !state.paused,
-                           artists: state.track_window.current_track.artists.map(artist => {
-                               return artist.name;
-                           })
-                       };
-
-                        //console.log(`🎵 ${track.name} - ${positionMs / 1000}s / ${durationMs / 1000}s`);
-                        // Update your UI here
-                          setMetaData(prev => newMetaData);
-                      });
-                    }, 1000);
-
                 // Not Ready
                 player.addListener('not_ready', ({ device_id }) => {
                     console.log('Device ID has gone offline', device_id);
@@ -176,15 +135,9 @@ export default function SpotifyPLayer(){
                         console.error("player didn't reallt connect...");
                         return;
                     }
-
-                    setPlayerRef(player);
+                    setPlayerRef(prev => player);
                 });
             }
-           window.addEventListener('beforeunload', () => {
-                if (statePollingInterval) {
-                  clearInterval(statePollingInterval);
-                }
-          });
 
             // load the external spotify script after defining the SDK callback as done above
             const script = document.createElement('script');
@@ -201,19 +154,100 @@ export default function SpotifyPLayer(){
 
     }, []);
 
+        useEffect(() => {
+            console.log("running that effect");
+                          const newOutOfSync = !(currTrackMetaData.track_uri && currTrackMetaData.track_uri === metaData.track_uri && Math.abs(currTrackMetaData.progress_ms-metaData.progress_ms) < 10000 && currTrackMetaData.is_playing === metaData.is_playing);
+
+            setOutOfSync(prev => newOutOfSync);
+
+
+        }, [metaData, currTrackMetaData]);
+
+
+    let isIn = false;
+    useEffect(()=>{
+        if(isIn){return;}
+        isIn = true;
+        console.log("is in the useEffect");
+
+        if(outOfSync && keepInSync){
+                          const onlyPaused = (currTrackMetaData.track_uri && currTrackMetaData.track_uri === metaData.track_uri && Math.abs(currTrackMetaData.progress_ms-metaData.progress_ms) < 10000) && currTrackMetaData.is_playing !== metaData.is_playing;
+            if (!onlyPaused || currTrackMetaData.is_playing){
+                                (async ()=>{
+                                await syncTrack(currTrackMetaData.track_uri, currTrackMetaData.progress_ms, currTrackMetaData.is_playing, currTrackMetaData.disc_number);
+                                })();
+
+            }else{
+                playerRef.pause().then(() => {
+                      console.log('Paused!');
+                });
+            }
+            console.log("completed the request");
+        }
+        isIn = false;
+        console.log("going out of useEffect");
+    }, [outOfSync, keepInSync]);
+
+    const [runAgain, setRunAgain] = useState(false);
+    useEffect(()=>{
+        if(playerRef){
+            //while (!initPlayer){
+            //console.log("helele");
+            playerRef.getCurrentState().then(state => {
+                if(!state){ setRunAgain(prev => !prev); /*console.log("no state!!!");*/ return;}
+                   const newMetaData = {
+                       track_uri: state.context.uri,
+                       progress_ms: state.position,
+                       name: state.track_window.current_track.name,
+                       is_playing: !state.paused,
+                       artists: state.track_window.current_track.artists.map(artist => {
+                           return artist.name;
+                       })
+                   };
+                    console.log("setting metadata");
+                    setMetaData(prev => newMetaData);
+                    console.log("was here setting intiPlayer");
+                    if(!initPlayer){setInitPlayer(prev => true);}
+
+
+            });
+           // }
+            const intervalId = setInterval(()=>{
+                playerRef.getCurrentState().then(state=>{
+                        if(!state){return;}
+                           const newMetaData = {
+                               track_uri: state.context.uri,
+                               progress_ms: state.position,
+                               name: state.track_window.current_track.name,
+                               is_playing: !state.paused,
+                               artists: state.track_window.current_track.artists.map(artist => {
+                                   return artist.name;
+                               })
+                           };
+                            setMetaData(prev => newMetaData);
+
+                });
+            }, 1500);
+
+        }
+    }, [playerRef, runAgain]);
+
+
+
+
     const prettyJson = JSON.stringify(metaData,undefined, 2);
-    const shouldSync = !(currTrackMetaData.track_uri && currTrackMetaData.track_uri === metaData.track_uri && Math.abs(currTrackMetaData.progress_ms-metaData.progress_ms) < 15000 );
-    return (<>
+//    const shouldSync = !(currTrackMetaData.track_uri && currTrackMetaData.track_uri === metaData.track_uri && Math.abs(currTrackMetaData.progress_ms-metaData.progress_ms) < 15000  && currTrackMetaData.is_playing === metaData.is_playing);
+    return (!initPlayer ? (<p>loading player...</p>) : (loadingNextTrack ? <p>loading next track...</p>: <>
         <p> Playing on your device:</p> <pre>{prettyJson}</pre>
-        {shouldSync &&
-            <button onClick={() => syncTrack(currTrackMetaData.track_uri, currTrackMetaData.progress_ms, currTrackMetaData.is_playing, currTrackMetaData.disc_number)}>
+        {syncing ? <p> syncing...</p> : (outOfSync && !keepInSync &&
+            <button onClick={() => {syncTrack(currTrackMetaData.track_uri, currTrackMetaData.progress_ms, currTrackMetaData.is_playing, currTrackMetaData.disc_number); }}>
             Sync In!
-        </button>
+        </button>)
         }
         {!keepInSync && <button onClick={() => nextTrack()}>Next track</button>}
         {!keepInSync ? <button onClick={() => setKeepInSync(true)}>Keep in Sync!</button>:
             <button onClick={() => setKeepInSync(false)}>Out of Sync</button>}
 
-    </>
+    </>)
     )
 }
