@@ -17,6 +17,9 @@ public class TrackMetadataBean {
     @JsonProperty("track_uri")
     private String trackUri;
 
+    @JsonProperty("resource_uri")
+    private String resourceUri;
+
     @JsonProperty("progress_ms")
     private Integer progressMs;
 
@@ -30,10 +33,11 @@ public class TrackMetadataBean {
     public TrackMetadataBean() {
     }
 
-    public TrackMetadataBean(String name, List<String> artists, String trackUri, Integer progress_ms, boolean isPlaying, Integer discNumber){
+    public TrackMetadataBean(String name, List<String> artists, String trackUri, String resourceUri, Integer progress_ms, boolean isPlaying, Integer discNumber){
         this.songName = name;
         this.artists = artists;
         this.trackUri = trackUri;
+        this.resourceUri = resourceUri;
         this.progressMs = progress_ms;
         this.isPlaying = isPlaying;
         this.discNumber = discNumber;
@@ -51,6 +55,10 @@ public class TrackMetadataBean {
 
     public String getTrackUri(){
         return trackUri;
+    }
+
+    public String getResourceUri(){
+        return resourceUri;
     }
 
     public Integer getProgressMs(){
@@ -77,6 +85,10 @@ public class TrackMetadataBean {
         this.trackUri = trackUri;
     }
 
+    public void setResourceUri(String resourceUri){
+        this.resourceUri = resourceUri;
+    }
+
     public void setProgress_ms(Integer prog){
         this.progressMs = prog;
     }
@@ -95,6 +107,7 @@ public class TrackMetadataBean {
                ", songName='" + songName + '\'' +
                ", artists='" + artists.toString() + '\'' +
                ", trackUri: '" + trackUri + '\'' +
+               ", resourceUri: '" + resourceUri + '\'' +
                ", progress_ms: '" + progressMs + '\'' +
                ", isPlaying: '" + isPlaying + '\'' +
                ", disc_number: '" + discNumber + '\'' +

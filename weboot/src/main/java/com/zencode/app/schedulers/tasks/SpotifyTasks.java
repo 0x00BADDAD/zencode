@@ -71,6 +71,7 @@ public class SpotifyTasks {
             if (root != null){
                 String trackHref = root.path("item").path("href").asText();
                 String trackUri = root.path("item").path("album").path("uri").asText();
+                String resourceUri = root.path("item").path("uri").asText();
                 Integer discNumber = root.path("item").path("track_number").asInt();
                 Integer progress_ms = root.path("progress_ms").asInt();
                 boolean isPlaying = root.path("is_playing").asBoolean();
@@ -100,13 +101,14 @@ public class SpotifyTasks {
                         artistsAll.add(artistName);
                     }
                 }
-                TrackMetadataBean trackMetadataBean = new TrackMetadataBean(songName, artistsAll, trackUri, progress_ms, isPlaying, discNumber);
-                logger.debug("Song Name: "+ songName + " Artists: "+ artistsAll.toString());
+                TrackMetadataBean trackMetadataBean = new TrackMetadataBean(songName, artistsAll, trackUri, resourceUri, progress_ms, isPlaying, discNumber);
+                //logger.debug("Song Name: "+ songName + " Artists: "+ artistsAll.toString());
+                logger.debug("Bean from spotify is: " + trackMetadataBean.toString());
                 trackMetaDataHolder.setData(trackMetadataBean);
                 myHandler.broadcast(trackMetadataBean);
             }else{
                 logger.debug("No song playing right now!");
-                myHandler.broadcast(new TrackMetadataBean("No music playing right now!", List.of(), "No-track", 0, false, 0));
+                myHandler.broadcast(new TrackMetadataBean("No music playing right now!", List.of(), "No-track", "No-resource", 0, false, 0));
             }
 
     }

@@ -239,7 +239,7 @@ public class HelloController {
     }
 
     @GetMapping("/api/play_track")
-    public ResponseEntity<Void> handlePlayTrack(@RequestParam("track_uri") String trackUri, @RequestParam("position") Integer position_ms, @RequestParam("email") String email, @RequestParam("is_playing") boolean is_playing, @RequestParam("disc_number") Integer discNumber){
+    public ResponseEntity<Void> handlePlayTrack(@RequestParam("track_uri") String trackUri, @RequestParam("resource_uri") String resource_uri, @RequestParam("position") Integer position_ms, @RequestParam("email") String email, @RequestParam("is_playing") boolean is_playing, @RequestParam("disc_number") Integer discNumber){
         String accessToken = cacheService.getAccessToken(email);
         String authHeader = "Bearer " + accessToken;
 
@@ -247,7 +247,7 @@ public class HelloController {
         Map<String, Object> bodyJson = new HashMap<>();
         //List<String> uris = List.of(trackUri);
         bodyJson.put("context_uri", trackUri);
-        bodyJson.put("offset", Map.ofEntries(Map.entry("position", discNumber-1)));
+        bodyJson.put("offset", Map.ofEntries(Map.entry("uri", resource_uri)));
         bodyJson.put("position_ms", position_ms);
 
 

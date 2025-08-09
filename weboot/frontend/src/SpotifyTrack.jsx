@@ -4,11 +4,11 @@ import {TrackMetaDataContext, TrackMetaDataDispatchContext} from './Contexts/Tra
 
 
 export default function SpotifyTrack() {
-    const [metaData, setMetaData] = useState({});
-    const [currTrackUri, setCurrTrackUri] = useState('');
+    //const [currTrackUri, setCurrTrackUri] = useState('');
 
     const trackMetaDataDispatch = useContext(TrackMetaDataDispatchContext);
     const trackMetaData = useContext(TrackMetaDataContext);
+    const [metaData, setMetaData] = useState({});
 
 
     useEffect(()=>{
@@ -21,7 +21,7 @@ export default function SpotifyTrack() {
               try {
                 const data = JSON.parse(event.data); // if message is JSON
                 console.log(`data is: ${event}`);
-                const {name, track_uri, artists , progress_ms, is_playing, disc_number}= data;
+                const {name, track_uri, resource_uri, artists , progress_ms, is_playing, disc_number}= data;
 
                 const newMetaData = {
                     name: name,
@@ -29,12 +29,13 @@ export default function SpotifyTrack() {
                     track_uri: track_uri,
                     progress_ms: progress_ms,
                     is_playing: is_playing,
-                    disc_number: disc_number
+                    disc_number: disc_number,
+                    resource_uri: resource_uri
                 };
 
-                if (!currTrackUri || !metaData || track_uri !== currTrackUri || progress_ms !== metaData.progress_ms || is_playing !== metaData.is_playing){
+                if (!metaData || resource_uri !== metaData.resource_uri || track_uri !== currTrackUri || progress_ms !== metaData.progress_ms || is_playing !== metaData.is_playing){
                     setMetaData(prev => newMetaData);
-                    setCurrTrackUri(prev => track_uri);
+                   // setCurrTrackUri(prev => track_uri);
                     trackMetaDataDispatch({
                         type: "update",
                         ...newMetaData
@@ -66,8 +67,7 @@ export default function SpotifyTrack() {
     return (
         <>
             <p>Atharv's device:</p>
-            <pre>
-            {prettyJson}
-        </pre></>
+            {Object.keys(metaData).length !== 0? (<pre>{prettyJson}</pre>) : (<p> loading track...</p>)}
+            </>
     );
 }
