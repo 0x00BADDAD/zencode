@@ -28,3 +28,28 @@
   z-index: 9999;
 }
 
+
+
+
+/* Background overlay */
+.overlay {
+  position: fixed;
+  inset: 0;
+  backdrop-filter: blur(5px); /* partial blur */
+  background: rgba(0, 0, 0, 0.2); /* subtle dark tint */
+  z-index: 100;
+}
+
+/* Modal container */
+.modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  z-index: 101; /* above overlay */
+  max-width: 400px;
+}

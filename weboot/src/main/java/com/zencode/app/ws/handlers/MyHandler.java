@@ -4,6 +4,7 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 import org.springframework.web.socket.handler.ConcurrentWebSocketSessionDecorator;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.socket.CloseStatus;
 
 import java.io.IOException;
@@ -14,8 +15,14 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.zencode.app.ws.handlers.beans.TrackMetadataBean;
+import com.zencode.app.ws.handlers.beans.EmailBean;
+
+import com.zencode.app.services.SyncService;
 
 public class MyHandler extends TextWebSocketHandler {
+
+    @Autowired
+    SyncService syncService;
 
     private final Map<String, WebSocketSession> sessions = new ConcurrentHashMap<>();
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -37,6 +44,20 @@ public class MyHandler extends TextWebSocketHandler {
         // Remove session
         sessions.remove(session.getId());
         logger.debug("Session removed: " + session.getId());
+    }
+
+    @Override
+    public void handleTextMessage(WebSocketSession session, TextMessage message){
+        logger.debug("Recd a message from client on session: "+ session.getId() + " " + message.getPayload());
+        String json = message.getPayload();
+
+        try{
+            EmailBean email =  objectMapper.readValue(json , EmailBean.class);
+            syncService.syncTrack(email);
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+
     }
 
     public void broadcast(TrackMetadataBean message) {

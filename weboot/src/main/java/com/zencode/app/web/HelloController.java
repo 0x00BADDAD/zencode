@@ -35,6 +35,7 @@ import org.apache.logging.log4j.Logger;
 
 import com.zencode.app.web.UserData;
 import com.github.benmanes.caffeine.cache.Cache;
+import org.springframework.cache.CacheManager;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.Optional;
 import com.zencode.app.services.CacheService;
@@ -43,36 +44,75 @@ import org.springframework.web.bind.annotation.RequestBody;
 import com.zencode.app.web.ReqBody;
 import java.util.List;
 import java.util.ArrayList;
-
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.Cookie;
 
 import com.zencode.app.ws.handlers.beans.TrackMetadataBean;
 import org.springframework.web.bind.annotation.PathVariable;
 import com.zencode.app.shared.SharedTrackMetaDataHolder;
-
+import com.zencode.app.services.RedisCacheService;
 
 
 @Controller
 @SessionAttributes("csrfToken")
 public class HelloController {
-    //@Autowired
-    //private ActorService actorService;
 
     @Autowired
     private SharedTrackMetaDataHolder trackMetaDataHolder;
 
     @Autowired
-    private CacheService cacheService;
+    private RedisCacheService cacheService;
+
 
     private static final Logger logger = LogManager.getLogger(HelloController.class);
 
 
     @GetMapping("/api/hello")
-    public String handleHello(Model model) {
+    public String handleHello(HttpServletRequest request, Model model) {
+        // if I do have the required cookies should redirect to the spotify login once
+        Cookie[] cookies = request.getCookies();
+        if(cookies != null){
+            return "redirect:/api/spotify_login_once";
+        }
+
         return "hello-world";  // resolved as hello.html in templates directory
     }
 
     @GetMapping("/api/spotify_login_once")
-    public String spotifyLoginOnce(@SessionAttribute(value = "csrfToken", required= false) String csrfToken, @RequestParam(value = "code", required = false) String code, @RequestParam(value = "state", required = false) String csrfTokenRecd, Model model, SessionStatus status){
+    public String spotifyLoginOnce(HttpServletRequest request, HttpServletResponse response, @SessionAttribute(value = "csrfToken", required= false) String csrfToken, @RequestParam(value = "code", required = false) String code, @RequestParam(value = "state", required = false) String csrfTokenRecd, Model model, SessionStatus status){
+
+            // check if we got the cookies set and if we do, we also do (may be) a redis check
+            Cookie[] cookies = request.getCookies();
+            if(cookies != null){
+                logger.debug("cookies weren't null????");
+                String sessionId = null;
+                String email = null;
+                for (Cookie cookie : cookies) {
+                    if ("session_id".equals(cookie.getName())) {
+                        sessionId = cookie.getValue();
+                    }
+                    //if("email".equals(cookie.getName())){
+                    //    email = cookie.getValue();
+                    //}
+                }
+
+                if(sessionId != null){
+                    if(cacheService.checkSessionId(sessionId)){
+                        // sessionId is present in redis
+                        String accessToken = cacheService.getAccessToken(sessionId);
+                        model.addAttribute("userGrantedPermission", true);
+                        model.addAttribute("accessToken", accessToken);
+                        model.addAttribute("sessionId", sessionId);
+                        TrackMetadataBean initialTrackMetaData = trackMetaDataHolder.getData();
+                        logger.debug("intialTrackMetaData when session exists!! is: " +initialTrackMetaData.toString());
+                        model.addAttribute("initialTrackMetaData", initialTrackMetaData);
+                        return "hello-world";
+                    }
+                }
+            }
+
+
         if (csrfToken == null){
             // to redirect the client to the spotify API
             String clientId = "9469751d45ca49cea94be50c071a3c65";
@@ -83,9 +123,9 @@ public class HelloController {
             String csrfTokenProd = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
             model.addAttribute("csrfToken", csrfTokenProd);
 
-            return "redirect:" + "https://accounts.spotify.com/authorize?client_id=" +clientId+ "&response_type=code" + "&redirect_uri="+redirectUri+"&scope=user-read-email user-modify-playback-state user-read-playback-state user-read-currently-playing streaming user-read-private"+"&state="+csrfTokenProd;
+            return "redirect:https://accounts.spotify.com/authorize?client_id=" +clientId+ "&response_type=code" + "&redirect_uri="+redirectUri+"&scope=user-read-email user-modify-playback-state user-read-playback-state user-read-currently-playing streaming user-read-private"+"&state="+csrfTokenProd;
             
-        }else {
+        } else {
             logger.debug("redirected to the spotify_login_once once again!");
 
             if (!csrfToken.equals(csrfTokenRecd)){
@@ -97,8 +137,6 @@ public class HelloController {
 
             String clientId = "9469751d45ca49cea94be50c071a3c65";
             String clientSecret = "6139b2de2c564d9a977f34c3b27fbda4";
-
-
 
             String inputString = clientId + ":" + clientSecret;
             byte[] utf8Bytes = inputString.getBytes(StandardCharsets.UTF_8);
@@ -138,71 +176,33 @@ public class HelloController {
 
             String email = root.path("email").asText();
 
-            cacheService.setRefreshToken(email, refreshToken);
-            cacheService.setAccessToken(email, accessToken);
+            // creating and storing the sessionId in the redis store/cache
+            String sessionId = csrfToken + "@" + email;
+            cacheService.setSessionId(sessionId);
 
+            cacheService.setRefreshToken(sessionId, refreshToken);
+            cacheService.setAccessToken(sessionId, accessToken);
 
+            // set cookies here with max-age 5 days => 5 * 24 * 3600 sec
+            Cookie cookie = new Cookie("session_id", sessionId);
+            cookie.setMaxAge(5 * 24 * 3600);
+            cookie.setPath("/");
+            cookie.setHttpOnly(true);
+            response.addCookie(cookie);
 
+            // set cookies here with max-age 5 days => 5 * 24 * 3600 sec
+            //Cookie cookie_ = new Cookie("email", email);
+            //cookie_.setMaxAge(5 * 24 * 3600);
+            //cookie_.setPath("/");
+            //cookie_.setHttpOnly(true);
+            //response.addCookie(cookie_);
+
+            // set model attributes
             model.addAttribute("userGrantedPermission", true);
             model.addAttribute("accessToken", accessToken);
-            model.addAttribute("userEmail", email);
+            model.addAttribute("sessionId", sessionId);
             TrackMetadataBean initialTrackMetaData = trackMetaDataHolder.getData();
             logger.debug("intialTrackMetaData is: " +initialTrackMetaData.toString());
-
-
-
-//            // TODO: Very verbose I am making yet another network call in order to get the initial Track data
-//            accessToken = cacheService.getAccessToken("admin");
-//            //RestClient restClient = RestClient.create();
-//            // TODO: proper error handling on all scheduled tasks
-//            authHeader = "Bearer " + accessToken;
-//            logger.debug("requesting track metadata from spotify in order to include it in front end!!");
-//            root = restClient.get()
-//                .uri("https://api.spotify.com/v1/me/player/currently-playing")
-//                .accept(MediaType.APPLICATION_JSON)
-//                .header("Authorization", authHeader)
-//                .retrieve()
-//                .body(JsonNode.class);
-//
-//
-//            if (root != null){
-//                String trackHref = root.path("item").path("href").asText();
-//                String trackUri = root.path("context").path("uri").asText();
-//                Integer discNumber = root.path("item").path("disc_number").asInt();
-//                Integer progress_ms = root.path("progress_ms").asInt();
-//                boolean isPlaying = root.path("is_playing").asBoolean();
-//
-//
-//
-//                String[] uriParts = trackUri.split(":");
-//                logger.debug("The type of Spotify URI received is: " + uriParts[1]);
-//
-//                JsonNode root_ = restClient.get()
-//                   .uri(trackHref)
-//                   .accept(MediaType.APPLICATION_JSON)
-//                   .header("Authorization", authHeader)
-//                   .retrieve()
-//                   .body(JsonNode.class);
-//
-//                String songName = root_.path("name").asText();
-//                List<String> artistsAll = new ArrayList<>();
-//
-//                JsonNode artists = root_.path("artists");
-//                if (artists.isArray()){
-//                    for (JsonNode artist: artists){
-//                        String artistName = artist.path("name").asText();
-//                        artistsAll.add(artistName);
-//                    }
-//                }
-//                TrackMetadataBean trackMetadataBean = new TrackMetadataBean(songName, artistsAll, trackUri, progress_ms, isPlaying, discNumber);
-//                logger.debug("Song Name: "+ songName + " Artists: "+ artistsAll.toString());
-//                model.addAttribute("initialTrackMetaData", trackMetadataBean);
-//                //myHandler.broadcast(trackMetadataBean);
-//            }else{
-//                logger.debug("No song playing right now! hence passing a rather empty object to frontend");
-//                model.addAttribute("initialTrackMetaData", new TrackMetadataBean("No music playing right now!", List.of(), "No-track", 0, false, 0));
-//            }
-
             model.addAttribute("initialTrackMetaData", initialTrackMetaData);
 
             return "hello-world";
@@ -212,8 +212,8 @@ public class HelloController {
     @GetMapping("/api/fresh_token")
     @ResponseBody
     @JsonView(TokRespClass.TokRespClassView.class)
-    public TokRespClass handleFetchAccessToken(@RequestParam("email") String email){
-            String accessToken = cacheService.getAccessToken(email);
+    public TokRespClass handleFetchAccessToken(@RequestParam("session_id") String sessionId){
+            String accessToken = cacheService.getAccessToken(sessionId);
             return new TokRespClass(accessToken);
     }
 
@@ -239,8 +239,9 @@ public class HelloController {
     }
 
     @GetMapping("/api/play_track")
-    public ResponseEntity<Void> handlePlayTrack(@RequestParam("track_uri") String trackUri, @RequestParam("resource_uri") String resource_uri, @RequestParam("position") Integer position_ms, @RequestParam("email") String email, @RequestParam("is_playing") boolean is_playing, @RequestParam("disc_number") Integer discNumber){
-        String accessToken = cacheService.getAccessToken(email);
+    public ResponseEntity<Void> handlePlayTrack(@RequestParam("track_uri") String trackUri, @RequestParam("resource_uri") String resource_uri, @RequestParam("position") Integer position_ms, @RequestParam("session_id") String sessionId, @RequestParam("is_playing") boolean is_playing, @RequestParam("disc_number") Integer discNumber){
+
+        String accessToken = cacheService.getAccessToken(sessionId);
         String authHeader = "Bearer " + accessToken;
 
         // map for json body
@@ -277,10 +278,10 @@ public class HelloController {
     }
 
     @GetMapping("/api/next_track")
-    public ResponseEntity<Void> handleNextTrack(@RequestParam("email") String email){
-        logger.debug("The email received in reuqest params is: "+ email);
+    public ResponseEntity<Void> handleNextTrack(@RequestParam("session_id") String sessionId){
+        logger.debug("The sessionID received in request params is: " + sessionId);
         RestClient restClient = RestClient.create();
-        String accessToken = cacheService.getAccessToken(email);
+        String accessToken = cacheService.getAccessToken(sessionId);
         restClient.post()
             .uri("https://api.spotify.com/v1/me/player/next")
             .header("Authorization", "Bearer " + accessToken)

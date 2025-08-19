@@ -27,7 +27,7 @@ dependencies {
     implementation("com.github.ben-manes.caffeine:caffeine:3.1.8")
 
     implementation("org.springframework.boot:spring-boot-starter-websocket")
-
+    implementation("org.springframework.boot:spring-boot-starter-data-redis")
 
     // Log4j 2 (optional; Spring Boot uses logback by default)
     implementation("org.apache.logging.log4j:log4j-core:2.20.0")
