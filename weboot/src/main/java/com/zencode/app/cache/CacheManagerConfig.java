@@ -17,7 +17,9 @@ import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 //import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
-//import org.springframework.data.redis.serializer.RedisSerializationContext;
+import org.springframework.data.redis.serializer.RedisSerializationContext;
+import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.data.redis.serializer.RedisSerializationContext;
 
 import java.time.Duration;
 import java.util.HashMap;
@@ -65,16 +67,23 @@ public class CacheManagerConfig {
         // Cache "users" with 10 minutes TTL
         cacheConfigurations.put("sessions",
                 RedisCacheConfiguration.defaultCacheConfig()
+                        .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
+                        .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
                         .entryTtl(Duration.ofDays(5)));
 
         // Cache "products" with 1 hour TTL
         cacheConfigurations.put("refTok",
                 RedisCacheConfiguration.defaultCacheConfig()
+                        .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
+                        .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
                         .entryTtl(Duration.ofDays(5)));
 
         cacheConfigurations.put("accTok",
                 RedisCacheConfiguration.defaultCacheConfig()
+                        .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
+                        .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
                         .entryTtl(Duration.ofMinutes(40)));
+
 
         // Default TTL for all others: 30 minutes
         RedisCacheConfiguration defaultConfig =

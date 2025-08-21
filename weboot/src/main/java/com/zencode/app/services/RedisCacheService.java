@@ -22,12 +22,17 @@ import java.nio.charset.StandardCharsets;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import com.zencode.app.web.RespClass;
+import com.fasterxml.jackson.databind.JsonNode;
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
+import org.springframework.aop.framework.AopContext;
+
 
 
 
 
 
 @Service
+@EnableAspectJAutoProxy(exposeProxy = true)
 public class RedisCacheService {
 
     private static final Logger logger = LogManager.getLogger(RedisCacheService.class);
@@ -49,6 +54,7 @@ public class RedisCacheService {
             myCache1.put(sessionId, token);
     }
 
+
     public void setSessionId(String sessionId){
         Cache sessionCache = cacheManager.getCache("sessions");
         sessionCache.put(sessionId, "true"); // it gets auotmatically removed when TTL completes.
@@ -64,14 +70,39 @@ public class RedisCacheService {
 
     @Cacheable(value = "refTok", key = "#a0")
     public String getRefreshToken(String sessionId){
-        logger.debug("Something went wrong, we are here in the RedisCacheService...");
+        logger.debug("Something went wrong, we are here in the RedisCacheService... session_id was "+ sessionId);
         return ""; // shouldn't come here
 
     }
 
+    //@Cacheable(value = "deviceId", key = "#a0")
+    public String getDeviceId(String sessionId){
+        RedisCacheService proxy = (RedisCacheService) AopContext.currentProxy();
+        String accessToken = proxy.getAccessToken(sessionId);
+        RestClient restClient = RestClient.create();
+
+        String authHeader = "Bearer " + accessToken;
+
+        JsonNode root = restClient.get()
+            .uri("https://api.spotify.com/v1/me/player")
+            .accept(MediaType.APPLICATION_JSON)
+            .header("Authorization", authHeader)
+            .retrieve()
+            .body(JsonNode.class);
+
+        if(root == null){
+            logger.debug("Playback is inactive right now. may be open the spotify app!");
+            return "";
+        }
+        String deviceId = root.path("device").path("id").asText();
+        logger.debug("got the device id of user and it is: " + deviceId);
+        return deviceId;
+    }
+
     @Cacheable(value = "accTok", key = "#a0")
     public String getAccessToken(String sessionId){
-            String refreshToken = getRefreshToken(sessionId);
+            RedisCacheService proxy = (RedisCacheService) AopContext.currentProxy();
+            String refreshToken = proxy.getRefreshToken(sessionId);
 
             RestClient restClient = RestClient.create();
             String clientId = "9469751d45ca49cea94be50c071a3c65";

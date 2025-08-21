@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import com.zencode.app.ws.handlers.beans.TrackMetadataBean;
 import com.zencode.app.ws.handlers.MyHandler;
 import com.zencode.app.services.CacheService;
+import com.zencode.app.services.RedisCacheService;
 
 import org.springframework.web.bind.annotation.PathVariable;
 import com.zencode.app.shared.SharedTrackMetaDataHolder;
@@ -47,6 +48,11 @@ public class SpotifyTasks {
 
     @Autowired
     private CacheService cacheService;
+
+    @Autowired
+    private RedisCacheService redisCacheService;
+
+
 
     private static final Logger logger = LogManager.getLogger(SpotifyTasks.class);
 
@@ -69,25 +75,19 @@ public class SpotifyTasks {
                 .retrieve()
                 .body(JsonNode.class);
             if (root != null){
+
                 String trackHref = root.path("item").path("href").asText();
                 String trackUri = root.path("item").path("album").path("uri").asText();
                 String resourceUri = root.path("item").path("uri").asText();
                 Integer discNumber = root.path("item").path("track_number").asInt();
                 Integer progress_ms = root.path("progress_ms").asInt();
                 boolean isPlaying = root.path("is_playing").asBoolean();
-
+                String deviceId = ""; // not needed
                 String songName = root.path("item").path("name").asText();
 
                 String[] uriParts = trackUri.split(":");
                 logger.debug("The type of Spotify URI received is: " + uriParts[1]);
 
-               // RestClient restClient_ = RestClient.create();
-               // JsonNode root_ = restClient_.get()
-               //    .uri(trackHref)
-               //    .accept(MediaType.APPLICATION_JSON)
-               //    .header("Authorization", authHeader)
-               //    .retrieve()
-               //    .body(JsonNode.class);
 
                // String songName = root_.path("name").asText();
                 List<String> artistsAll = new ArrayList<>();
@@ -101,15 +101,17 @@ public class SpotifyTasks {
                         artistsAll.add(artistName);
                     }
                 }
-                TrackMetadataBean trackMetadataBean = new TrackMetadataBean(songName, artistsAll, trackUri, resourceUri, progress_ms, isPlaying, discNumber);
+                TrackMetadataBean trackMetadataBean = new TrackMetadataBean(songName, artistsAll, trackUri, resourceUri, progress_ms, isPlaying, discNumber, true, deviceId);
                 //logger.debug("Song Name: "+ songName + " Artists: "+ artistsAll.toString());
                 logger.debug("Bean from spotify is: " + trackMetadataBean.toString());
                 trackMetaDataHolder.setData(trackMetadataBean);
                 myHandler.broadcast(trackMetadataBean);
             }else{
                 logger.debug("No song playing right now!");
-                myHandler.broadcast(new TrackMetadataBean("No music playing right now!", List.of(), "No-track", "No-resource", 0, false, 0));
+                TrackMetadataBean emptyBean = new TrackMetadataBean("No music playing right now!", List.of(), "No-track", "No-resource", 0, false, 0, true, "No-device-active");
+                trackMetaDataHolder.setData(emptyBean);
+                myHandler.broadcast(emptyBean);
             }
-
     }
+
 }

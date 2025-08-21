@@ -17,6 +17,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         registry.addHandler(myHandler(), "/ws1")
+                .addInterceptors(customHandshakeInterceptor())
                 .setAllowedOrigins("*");
     }
 
@@ -24,4 +25,10 @@ public class WebSocketConfig implements WebSocketConfigurer {
     public MyHandler myHandler() {
         return new MyHandler();
     }
+
+    @Bean
+    public CustomHandshakeInterceptor customHandshakeInterceptor(){
+        return new CustomHandshakeInterceptor();
+    }
+
 }

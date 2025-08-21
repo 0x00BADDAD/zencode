@@ -28,6 +28,7 @@ dependencies {
 
     implementation("org.springframework.boot:spring-boot-starter-websocket")
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
+    implementation("org.springframework.boot:spring-boot-starter-aop")
 
     // Log4j 2 (optional; Spring Boot uses logback by default)
     implementation("org.apache.logging.log4j:log4j-core:2.20.0")

@@ -11,7 +11,7 @@ public class SchedulerConfig {
     @Bean
     public ThreadPoolTaskScheduler taskScheduler() {
         ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
-        scheduler.setPoolSize(5);
+        scheduler.setPoolSize(10);
         scheduler.setThreadNamePrefix("ScheduledTask-");
         scheduler.setRemoveOnCancelPolicy(true);
         scheduler.initialize();

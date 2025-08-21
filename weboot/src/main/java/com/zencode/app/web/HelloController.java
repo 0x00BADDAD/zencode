@@ -53,7 +53,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import com.zencode.app.shared.SharedTrackMetaDataHolder;
 import com.zencode.app.services.RedisCacheService;
 
-
 @Controller
 @SessionAttributes("csrfToken")
 public class HelloController {
@@ -99,11 +98,15 @@ public class HelloController {
 
                 if(sessionId != null){
                     if(cacheService.checkSessionId(sessionId)){
+                        logger.debug("was here sessionId is in redis...");
                         // sessionId is present in redis
                         String accessToken = cacheService.getAccessToken(sessionId);
+                        String deviceId = cacheService.getDeviceId(sessionId);
+
                         model.addAttribute("userGrantedPermission", true);
                         model.addAttribute("accessToken", accessToken);
                         model.addAttribute("sessionId", sessionId);
+                        model.addAttribute("deviceId", deviceId);
                         TrackMetadataBean initialTrackMetaData = trackMetaDataHolder.getData();
                         logger.debug("intialTrackMetaData when session exists!! is: " +initialTrackMetaData.toString());
                         model.addAttribute("initialTrackMetaData", initialTrackMetaData);
@@ -183,6 +186,8 @@ public class HelloController {
             cacheService.setRefreshToken(sessionId, refreshToken);
             cacheService.setAccessToken(sessionId, accessToken);
 
+            String deviceId = cacheService.getDeviceId(sessionId);
+
             // set cookies here with max-age 5 days => 5 * 24 * 3600 sec
             Cookie cookie = new Cookie("session_id", sessionId);
             cookie.setMaxAge(5 * 24 * 3600);
@@ -201,6 +206,7 @@ public class HelloController {
             model.addAttribute("userGrantedPermission", true);
             model.addAttribute("accessToken", accessToken);
             model.addAttribute("sessionId", sessionId);
+            model.addAttribute("deviceId", deviceId);
             TrackMetadataBean initialTrackMetaData = trackMetaDataHolder.getData();
             logger.debug("intialTrackMetaData is: " +initialTrackMetaData.toString());
             model.addAttribute("initialTrackMetaData", initialTrackMetaData);
@@ -222,18 +228,29 @@ public class HelloController {
     @PostMapping("/api/transfer_playback")
     @ResponseBody
     @JsonView(ReqBody.ReqBodyView.class)
-    public ReqBody handleTransferPlayback(@RequestHeader("X-Token") String accessToken, @RequestBody ReqBody reqBody){
+    public ReqBody handleTransferPlayback(@RequestHeader(value = "X-Token", required = false) String accessToken, @RequestBody ReqBody reqBody, @CookieValue("session_id") String sessionId){
+        String authHeader = "";
+        String deviceId = null;
         RestClient restClient = RestClient.create();
-        String authHeader = "Bearer " + accessToken;
-        logger.debug("the req body recd from frontend is: " + reqBody.toString());
-
-        restClient.put()
-            .uri("https://api.spotify.com/v1/me/player")
-            .header("Authorization", authHeader)
-            .contentType(MediaType.APPLICATION_JSON)
-            .body(reqBody)
-            .retrieve()
-            .toBodilessEntity();
+        if(accessToken != null){
+            authHeader = "Bearer " + accessToken;
+        }else if(sessionId != null){
+            String accTok = cacheService.getAccessToken(sessionId);
+            deviceId = cacheService.getDeviceId(sessionId);
+            authHeader = "Bearer " + accTok;
+        }
+        //logger.debug("the req body recd from frontend is: " + reqBody.toString());
+        if(deviceId == null || !deviceId.equals("")){
+            restClient.put()
+                .uri("https://api.spotify.com/v1/me/player")
+                .header("Authorization", authHeader)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(reqBody)
+                .retrieve()
+                .toBodilessEntity();
+        }else{
+            logger.debug("NO deviceId for the user...................");
+        }
         return reqBody;
 
     }
@@ -293,6 +310,21 @@ public class HelloController {
                 .build();
     }
 
+
+    @GetMapping("/api/pause_track")
+    public ResponseEntity<Void> handlePauseTrack(@RequestParam("session_id") String sessionId){
+        logger.debug("The sessionID received in request params is: " + sessionId);
+        RestClient restClient = RestClient.create();
+        String accessToken = cacheService.getAccessToken(sessionId);
+        restClient.put()
+            .uri("https://api.spotify.com/v1/me/player/pause")
+            .header("Authorization", "Bearer " + accessToken)
+            .retrieve()
+            .toBodilessEntity();
+
+        return ResponseEntity.ok()
+                .build();
+    }
 
     @GetMapping("/api/{id}")
     public ResponseEntity<Map<String, Object>> handleIdGen(@PathVariable String id, @RequestParam("email") String email){

@@ -5,6 +5,9 @@ import com.fasterxml.jackson.annotation.JsonView;
 import java.util.List;
 import java.util.ArrayList;
 
+
+
+
 public class TrackMetadataBean {
     public interface TokRespJsonView {};
 
@@ -29,11 +32,16 @@ public class TrackMetadataBean {
     @JsonProperty("disc_number")
     private Integer discNumber;
 
+    @JsonProperty("atharv_track")
+    private boolean atharvTrack;
+
+    @JsonProperty("device_id")
+    private String deviceId;
 
     public TrackMetadataBean() {
     }
 
-    public TrackMetadataBean(String name, List<String> artists, String trackUri, String resourceUri, Integer progress_ms, boolean isPlaying, Integer discNumber){
+    public TrackMetadataBean(String name, List<String> artists, String trackUri, String resourceUri, Integer progress_ms, boolean isPlaying, Integer discNumber, boolean atharvTrack, String deviceId){
         this.songName = name;
         this.artists = artists;
         this.trackUri = trackUri;
@@ -41,6 +49,8 @@ public class TrackMetadataBean {
         this.progressMs = progress_ms;
         this.isPlaying = isPlaying;
         this.discNumber = discNumber;
+        this.atharvTrack = atharvTrack;
+        this.deviceId =  deviceId;
     }
     // --- Getters and Setters for all fields ---
     // These are also required by Jackson for populating the object's state.
@@ -73,6 +83,14 @@ public class TrackMetadataBean {
         return discNumber;
     }
 
+    public boolean getAtharvTrack(){
+        return this.atharvTrack;
+    }
+
+    public String getDeviceId(){
+        return this.deviceId;
+    }
+
     public void setSongName(String name){
         this.songName = name;
     }
@@ -101,6 +119,14 @@ public class TrackMetadataBean {
         this.discNumber = dn;
     }
 
+    public void setAtharvTrack(boolean atharvTrack){
+        this.atharvTrack = atharvTrack;
+    }
+
+    public void setDeviceId(String deviceId){
+        this.deviceId = deviceId;
+    }
+
     @Override
     public String toString() {
         return "TrackMetadataBeanClass{" +
@@ -111,6 +137,8 @@ public class TrackMetadataBean {
                ", progress_ms: '" + progressMs + '\'' +
                ", isPlaying: '" + isPlaying + '\'' +
                ", disc_number: '" + discNumber + '\'' +
+               ", atharv_track '" + atharvTrack + '\'' +
+               ", device_id '" + deviceId + '\'' +
                '}';
     }
 }
