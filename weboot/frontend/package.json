@@ -2,17 +2,19 @@
   "name": "frontend",
   "version": "1.0.0",
   "description": "",
-  "priavte": true,
+  "private": true,
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "webpack --config webpack.config.js",
-    "start": "webpack serve --open"
+    "start": "webpack serve --hot --open"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "@babel/plugin-transform-react-jsx-development": "^7.27.1",
+    "@babel/preset-env": "^7.28.3",
+    "@babel/preset-react": "^7.27.1",
     "@pmmmwh/react-refresh-webpack-plugin": "^0.6.1",
     "babel-loader": "^10.0.0",
     "css-loader": "^7.1.2",

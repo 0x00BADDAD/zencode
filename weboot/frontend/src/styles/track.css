@@ -1,0 +1,256 @@
+
+.track{
+      position: absolute;
+      top: 10.75%;                /* push top edge to 50% of viewport height */
+      left: 31.15%;               /* push left edge to 50% of viewport width */
+      /*transform: translate(-50%, -50%);*/ /* adjust to truly center */
+      width: 33.06%;
+      height: 25.85%;
+      background-color: #D9D9D9;
+      border-radius: 10px;
+}
+/* W: 1728 H: 1117*/
+:root {
+  --box-height: 73.65%;
+}
+
+.cover-pic{
+    position: absolute;
+    top: 6.02%;
+    left: 0.95%;
+    height: var(--box-height);
+    /*width: 27.23%;*/
+    aspect-ratio: 1;
+    /*background-image: url('../static/images/starboy.png');
+   /* background-size: cover;       /* resizes image to fully cover div */
+   /* background-position: center;*/
+    /*object-fit: cover;*/
+    box-shadow: 0px 5px 5px 3px rgba(0,0,0, 0.25);
+    background-color: purple;
+    padding: 0;
+    user-select: none;
+}
+
+img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* crop instead of squish */
+}
+
+
+.song-info{
+    position: absolute;
+    top: 6.02%;
+    left: 31.4%;
+    width: 62.13%;
+    height: 32.4%;
+    padding: 0;
+    background-color: #D9D9D9;
+}
+
+.pause-play{
+    position: absolute;
+    top: 41.7%;
+    left: 55.2%;
+    width: 13.2%;
+    /*height: 51.64%;*/
+    aspect-ratio: 1;
+    background-color: white;
+    border: 2px solid black;
+    border-radius: 100px;
+}
+
+.timeline{
+    position: absolute;
+    top: 82%;
+    left: 33.63%;
+    width: 61.24%;
+    height:4.22%;
+    /*background-color: #FFFFFF;*/
+    /*background: linear-gradient(to right, red 10%, #D9D9D9 90%);*/
+    padding: 0;
+    border-radius: 10px;
+    box-shadow: 0px 2px 5px 2px rgba(0,0,0, 0.25);
+    cursor: pointer;
+}
+
+.timeline-pointer{
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    left: 47%;
+    height: 90%;
+    aspect-ratio: 1;
+    background-color: white;
+    border: 2px solid black;
+    border-radius: 10px;
+    transition: transform 0.1s ease;
+}
+
+.timeline-pointer:hover{
+    transform: translateY(-50%) scale(10);
+}
+
+.next-track{
+    position: absolute;
+    top: 52.12%;
+    left: 76.21%;
+    width: 6.26%;
+    height: 18.77%;
+    background-color: #D9D9D9;
+}
+
+.prev-track{
+    position:absolute;
+    left: 41%;
+    top: 52.12%;
+    width: 6.26%;
+    height: 18.77%;
+    background-color: #D9D9D9;
+}
+
+@font-face {
+  font-family: 'Instrument Sans';
+  src: url('../static/fonts/InstrumentSans_Condensed-SemiBold.ttf') format('ttf');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Instrument Sans Medium';
+  src: url('../static/fonts/InstrumentSans-Medium.ttf') format('ttf');
+  font-weight: normal;
+  font-style: normal;
+}
+
+.song-name-container{
+    position: absolute;
+    top: 0%;
+    left: 0%;
+    width: 65%;
+    height: 65%;
+    font-family: 'Instrument Sans', sans-serif; /* fallback if font missing */
+    font-size: 30px;   /* size in px, rem, or em */
+    font-weight: 600; /* semi-bold */
+    overflow: hidden;       /* hide the overflowing text */
+    white-space: nowrap;    /* keep text in a single line */
+    /*border: 1px solid #ccc;*/
+}
+
+.song-name-container::after {
+  content: "";
+  position: absolute;
+  top: 0%;
+  left: 0%;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* let mouse through */
+  background: linear-gradient(
+    to right,
+    rgba(217, 217, 217, 1) 0%,   /* solid background */
+    rgba(217, 217, 217, 0) 10%,  /* fade out */
+    rgba(217, 217, 217, 0) 90%,
+    rgba(217, 217, 217, 1) 100%
+  );
+}
+
+.song-name-text{
+   /* width: 100%;*/
+    position: absolute;
+    display: inline-block;
+    left: 0%;
+    top: 0%;
+    /*height:100%;*/
+   /* width: 100%;*/
+   /* animation: scroll-first 5s linear 1;
+              /* scroll 10s linear infinite forwards 5s;*/
+}
+
+@keyframes scroll-first {
+
+ 0% {
+    transform: translateX(0%);  /* start at right edge */
+  }
+ /* 40% {
+    transform: translateX(100%); /* fully scrolled left */
+ /* }
+  40% {
+    transform: translateX(-200%); /* hold at left for pause */
+ /* }*/
+  100% {
+     transform: translateX(100%);
+  }
+}
+
+@keyframes scroll {
+ 0% {
+    /*transform: translateX(100%);  /* start at right edge */
+     left: 100%;
+  }
+ /* 40% {
+    transform: translateX(100%); /* fully scrolled left */
+ /* }
+  40% {
+    transform: translateX(-200%); /* hold at left for pause */
+ /* }*/
+  100% {
+     transform: translateX(-100%);
+  }
+}
+
+
+.artist-name{
+    font-family: 'Instrument Sans Medium', sans-serif;
+    font-weight: 500;
+    position: absolute;
+    white-space: nowrap;        /* keep text in a single line */
+    overflow: hidden;           /* hide anything that overflows */
+    text-overflow: ellipsis;
+    bottom: 0%;
+    /* 15.02 x 30.44 (278.96 x 53.77) | 130 x 14.28 */
+    left: 5.38%;
+    width: 46.6%;
+    height: 31%;
+}
+
+
+
+.pane-container{
+    position: absolute;
+    left: 68.85%;
+    top: 5.42%;
+    width: 29.39%;
+    height: 19.27%;
+    background-color: #FFFFFF;
+    border-radius: 15px;
+    z-index: 100;
+    cursor: pointer;
+}
+
+@font-face {
+  font-family: 'IBM';
+  src: url('../static/fonts/IBMPlexMono-SemiBold.ttf') format('truetype');
+}
+
+.pane-choice{
+    position: absolute;
+    font-family: 'IBM', monospace;
+    box-sizing: border-box;
+    /*left: 9.09%; */
+    left: 0%;
+    padding-left: 9.09%;
+    /*top: 31.25%;*/
+    width: 82.09%;
+    /*height: 69.56%;*/
+    height: 100%;
+    padding-top: 7.5%;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.pane-icon{
+    position: absolute;
+    left: 82%;
+    top: 31.25%;
+    width: 12.87%;
+}

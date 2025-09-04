@@ -21,6 +21,14 @@ public class RespClass {
     @JsonProperty("scope")
     private String scope;
 
+
+    public interface DurationView{}
+
+    @JsonProperty("duration_ms")
+    private Integer durationMs;
+
+
+
     public RespClass() {
     }
 
@@ -72,6 +80,14 @@ public class RespClass {
         this.scope = scope;
     }
 
+    @JsonView(DurationView.class)
+    public Integer getDurationMs(){
+        return durationMs;
+    }
+    public void setDurationMs(Integer duration){
+        this.durationMs = duration;
+    }
+
     @Override
     public String toString() {
         return "RespClass{" +
@@ -80,6 +96,7 @@ public class RespClass {
                ", expiresIn=" + expiresIn +
                ", refreshToken='" + refreshToken + '\'' +
                ", scope='" + scope + '\'' +
+               ", duration_ms='" + durationMs + '\'' +
                '}';
     }
 }

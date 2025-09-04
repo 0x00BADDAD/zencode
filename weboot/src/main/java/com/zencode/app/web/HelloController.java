@@ -53,6 +53,13 @@ import org.springframework.web.bind.annotation.PathVariable;
 import com.zencode.app.shared.SharedTrackMetaDataHolder;
 import com.zencode.app.services.RedisCacheService;
 
+import org.springframework.web.util.UriComponents;
+import org.springframework.web.util.UriComponentsBuilder;
+import java.net.URI;
+
+
+
+
 @Controller
 @SessionAttributes("csrfToken")
 public class HelloController {
@@ -112,6 +119,8 @@ public class HelloController {
                         model.addAttribute("initialTrackMetaData", initialTrackMetaData);
                         return "hello-world";
                     }
+                }else{
+                    logger.debug("sessionId was null!?!?!?! Despite cookies being non null????");
                 }
             }
 
@@ -255,6 +264,38 @@ public class HelloController {
 
     }
 
+    @GetMapping("/api/tracks")
+    @ResponseBody
+    @JsonView(RespClass.DurationView.class)
+    public RespClass handleDurationTrack(@RequestParam("session_id") String sessionId, @RequestParam("track_id") String trackId){
+
+        logger.debug("The trackId received is: " + trackId);
+        UriComponents uriComponents = UriComponentsBuilder
+                .fromUriString("https://api.spotify.com/v1/tracks/{track_id}")
+                .encode()
+                .build();
+
+        URI uri_ = uriComponents.expand(trackId).toUri();
+
+
+        String accessToken = cacheService.getAccessToken(sessionId);
+        String authHeader = "Bearer " + accessToken;
+
+        RestClient restClient = RestClient.create();
+        JsonNode resp = restClient.get()
+            .uri(uri_)
+            .accept(MediaType.APPLICATION_JSON)
+            .header("Authorization", authHeader)
+            .retrieve()
+            .body(JsonNode.class);
+
+        Integer durationMs = resp.path("duration_ms").asInt();
+        RespClass respJson = new RespClass();
+        respJson.setDurationMs(durationMs);
+        return respJson;
+    }
+
+
     @GetMapping("/api/play_track")
     public ResponseEntity<Void> handlePlayTrack(@RequestParam("track_uri") String trackUri, @RequestParam("resource_uri") String resource_uri, @RequestParam("position") Integer position_ms, @RequestParam("session_id") String sessionId, @RequestParam("is_playing") boolean is_playing, @RequestParam("disc_number") Integer discNumber){
 
@@ -310,6 +351,21 @@ public class HelloController {
                 .build();
     }
 
+    @GetMapping("/api/prev_track")
+    public ResponseEntity<Void> handlePrevTrack(@RequestParam("session_id") String sessionId){
+        logger.debug("The sessionID received in request params is: " + sessionId);
+        RestClient restClient = RestClient.create();
+        String accessToken = cacheService.getAccessToken(sessionId);
+        restClient.post()
+            .uri("https://api.spotify.com/v1/me/player/previous ")
+            .header("Authorization", "Bearer " + accessToken)
+            .retrieve()
+            .toBodilessEntity();
+
+
+        return ResponseEntity.ok()
+                .build();
+    }
 
     @GetMapping("/api/pause_track")
     public ResponseEntity<Void> handlePauseTrack(@RequestParam("session_id") String sessionId){
@@ -325,6 +381,50 @@ public class HelloController {
         return ResponseEntity.ok()
                 .build();
     }
+
+    @GetMapping("/api/resume_track")
+    public ResponseEntity<Void> handleResumeTrack(@RequestParam("session_id") String sessionId){
+        logger.debug("The sessionID received in request params is: " + sessionId);
+        RestClient restClient = RestClient.create();
+        String accessToken = cacheService.getAccessToken(sessionId);
+        restClient.put()
+            .uri("https://api.spotify.com/v1/me/player/play")
+            .header("Authorization", "Bearer " + accessToken)
+            .retrieve()
+            .toBodilessEntity();
+
+        return ResponseEntity.ok()
+                .build();
+    }
+
+    @GetMapping("/api/seek_track")
+    public ResponseEntity<Void> handleSeekTrack(@RequestParam("session_id") String sessionId, @RequestParam("seek_ms") Integer seekMs){
+        logger.debug("The sessionID received in request params is: " + sessionId);
+
+        UriComponents uriComponents = UriComponentsBuilder
+                .fromUriString("https://api.spotify.com/v1/me/player/seek")
+                .queryParam("position_ms", "{q}")
+                .encode()
+                .build();
+
+        URI uri_ = uriComponents.expand(seekMs).toUri();
+
+        logger.debug("uri for seeking into track: " + uri_.toString());
+
+        RestClient restClient = RestClient.create();
+        String accessToken = cacheService.getAccessToken(sessionId);
+        restClient.put()
+            .uri(uri_)
+            .header("Authorization", "Bearer " + accessToken)
+            .retrieve()
+            .toBodilessEntity();
+
+        return ResponseEntity.ok()
+                .build();
+    }
+
+
+
 
     @GetMapping("/api/{id}")
     public ResponseEntity<Map<String, Object>> handleIdGen(@PathVariable String id, @RequestParam("email") String email){

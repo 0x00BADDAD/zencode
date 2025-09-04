@@ -117,6 +117,7 @@ public class MyHandler extends TextWebSocketHandler {
                 String trackUri = root.path("item").path("album").path("uri").asText();
                 String resourceUri = root.path("item").path("uri").asText();
                 Integer discNumber = root.path("item").path("track_number").asInt();
+                Integer duration_ms = root.path("item").path("duration_ms").asInt();
                 Integer progress_ms = root.path("progress_ms").asInt();
                 boolean isPlaying = root.path("is_playing").asBoolean();
                 //String deviceId = root.path("device").path("id").asText();
@@ -139,14 +140,20 @@ public class MyHandler extends TextWebSocketHandler {
                         artistsAll.add(artistName);
                     }
                 }
-                TrackMetadataBean trackMetadataBean = new TrackMetadataBean(songName, artistsAll, trackUri, resourceUri, progress_ms, isPlaying, discNumber, false, deviceId);
+
+                JsonNode images = root.path("item").path("album").path("images");
+                // we take the first image only
+                String imgUrl = images.get(0).path("url").asText();
+                logger.debug("Got the album image url and it is: " + imgUrl);
+
+                TrackMetadataBean trackMetadataBean = new TrackMetadataBean(songName, artistsAll, trackUri, resourceUri, progress_ms, duration_ms, isPlaying, discNumber, false, deviceId, imgUrl);
                 //logger.debug("Song Name: "+ songName + " Artists: "+ artistsAll.toString());
                 logger.debug("Bean from spotify is: " + trackMetadataBean.toString());
                 //trackMetaDataHolder.setData(trackMetadataBean);
                 broadcast(trackMetadataBean);
             }else{
                 logger.debug("No song playing right now!");
-                TrackMetadataBean emptyBean = new TrackMetadataBean("No music playing right now!", List.of(), "No-track", "No-resource", 0, false, 0, false, "No-device-active");
+                TrackMetadataBean emptyBean = new TrackMetadataBean("No music playing right now!", List.of(), "No-track", "No-resource", 0, 0, false, 0, false, "No-device-active", "No-img-url");
                 //trackMetaDataHolder.setData(emptyBean);
                 broadcast(emptyBean);
             }

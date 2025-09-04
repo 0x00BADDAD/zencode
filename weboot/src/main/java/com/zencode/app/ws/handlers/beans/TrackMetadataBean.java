@@ -26,6 +26,9 @@ public class TrackMetadataBean {
     @JsonProperty("progress_ms")
     private Integer progressMs;
 
+    @JsonProperty("duration_ms")
+    private Integer durationMs;
+
     @JsonProperty("is_playing")
     private boolean isPlaying;
 
@@ -38,22 +41,28 @@ public class TrackMetadataBean {
     @JsonProperty("device_id")
     private String deviceId;
 
+    @JsonProperty("img_url")
+    private String imgUrl;
+
     public TrackMetadataBean() {
     }
 
-    public TrackMetadataBean(String name, List<String> artists, String trackUri, String resourceUri, Integer progress_ms, boolean isPlaying, Integer discNumber, boolean atharvTrack, String deviceId){
+    public TrackMetadataBean(String name, List<String> artists, String trackUri, String resourceUri, Integer progress_ms, Integer duration_ms, boolean isPlaying, Integer discNumber, boolean atharvTrack, String deviceId, String imgUrl){
         this.songName = name;
         this.artists = artists;
         this.trackUri = trackUri;
         this.resourceUri = resourceUri;
         this.progressMs = progress_ms;
+        this.durationMs = duration_ms;
         this.isPlaying = isPlaying;
         this.discNumber = discNumber;
         this.atharvTrack = atharvTrack;
         this.deviceId =  deviceId;
+        this.imgUrl = imgUrl;
     }
     // --- Getters and Setters for all fields ---
     // These are also required by Jackson for populating the object's state.
+    // Getters
     public String getSongName(){
         return songName;
     }
@@ -75,6 +84,9 @@ public class TrackMetadataBean {
         return progressMs;
     }
 
+    public Integer getDurationMs(){
+        return durationMs;
+    }
     public boolean getIsPlaying(){
         return isPlaying;
     }
@@ -84,13 +96,18 @@ public class TrackMetadataBean {
     }
 
     public boolean getAtharvTrack(){
-        return this.atharvTrack;
+        return atharvTrack;
     }
 
     public String getDeviceId(){
-        return this.deviceId;
+        return deviceId;
     }
 
+    public String getImgUrl(){
+        return imgUrl;
+    }
+
+    // Setters
     public void setSongName(String name){
         this.songName = name;
     }
@@ -107,8 +124,12 @@ public class TrackMetadataBean {
         this.resourceUri = resourceUri;
     }
 
-    public void setProgress_ms(Integer prog){
+    public void setProgressMs(Integer prog){
         this.progressMs = prog;
+    }
+
+    public void setDurationMs(Integer prog){
+        this.durationMs = prog;
     }
 
     public void setIsPlaying(boolean val){
@@ -127,6 +148,10 @@ public class TrackMetadataBean {
         this.deviceId = deviceId;
     }
 
+    public void setImgUrl(String url){
+        this.imgUrl = url;
+    }
+
     @Override
     public String toString() {
         return "TrackMetadataBeanClass{" +
@@ -135,10 +160,12 @@ public class TrackMetadataBean {
                ", trackUri: '" + trackUri + '\'' +
                ", resourceUri: '" + resourceUri + '\'' +
                ", progress_ms: '" + progressMs + '\'' +
+               ", duration_ms: '" + durationMs + '\'' +
                ", isPlaying: '" + isPlaying + '\'' +
                ", disc_number: '" + discNumber + '\'' +
                ", atharv_track '" + atharvTrack + '\'' +
                ", device_id '" + deviceId + '\'' +
+               ", img_url '" + imgUrl + '\'' +
                '}';
     }
 }

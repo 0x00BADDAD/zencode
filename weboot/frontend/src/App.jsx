@@ -20,9 +20,17 @@ function App() {
         <WsRefProvider>
             <TrackMetaDataProvider initialTrackMetaData={initialTrackMetaData}>
                 <SpotifyTrack/>
-                <SpotifyLogin/>
-                {userGrantedPermission &&
-                <SpotifyPlayer/>}
+                {/*<SpotifyLogin/>*/}
+                {
+                userGrantedPermission ?
+                    <SpotifyPlayer/>
+                :
+                    (<div>
+                            <a href="http://127.0.0.1:3000/api/spotify_login_once">
+                              <button>Log in with Spotify</button>
+                            </a>
+                    </div>)
+                }
                  {disableWebSocket && (
                         <>
                           {/* Overlay with partial blur */}
