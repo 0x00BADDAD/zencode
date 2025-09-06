@@ -105,8 +105,9 @@ export default function SpotifyTrack() {
             {/*<DevicePane deviceIds={deviceIds}/>*/}
             <div className="pause-play"
             style={{
-                backgroundColor: "#B7AEAE"
-                }}>
+                backgroundColor: "#B7AEAE",
+                border: "2px solid #B7AEAE"
+            }}>
                 <img src={metaData.is_playing ? pause: play}
                  style={{
                     width:"50%",
@@ -118,7 +119,6 @@ export default function SpotifyTrack() {
                     transform: `translate(-${metaData.is_playing ? 50 : 40}%, -50%)`,
                      backgroundColor: "#B7AEAE",
                      opacity: "0.3"
-
                 }}
             /></div>
             <div className="next-track" style={{opacity: "0.3"}}><img src={next}/></div>

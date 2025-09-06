@@ -53,6 +53,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import com.zencode.app.shared.SharedTrackMetaDataHolder;
 import com.zencode.app.services.RedisCacheService;
 
+import com.zencode.app.web.TrackMetadataBeanWeb;
+
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 import java.net.URI;
@@ -336,7 +338,9 @@ public class HelloController {
     }
 
     @GetMapping("/api/next_track")
-    public ResponseEntity<Void> handleNextTrack(@RequestParam("session_id") String sessionId){
+    @ResponseBody
+    @JsonView(TrackMetadataBeanWeb.TrackMetadataJsonView.class)
+    public TrackMetadataBeanWeb handleNextTrack(@RequestParam("session_id") String sessionId){
         logger.debug("The sessionID received in request params is: " + sessionId);
         RestClient restClient = RestClient.create();
         String accessToken = cacheService.getAccessToken(sessionId);
@@ -346,9 +350,63 @@ public class HelloController {
             .retrieve()
             .toBodilessEntity();
 
+        JsonNode root = restClient.get()
+            .uri("https://api.spotify.com/v1/me/player/currently-playing")
+            .accept(MediaType.APPLICATION_JSON)
+            .header("Authorization", "Bearer " + accessToken)
+            .retrieve()
+            .body(JsonNode.class);
 
-        return ResponseEntity.ok()
-                .build();
+
+        if (root != null){
+
+            String trackHref = root.path("item").path("href").asText();
+            String trackUri = root.path("item").path("album").path("uri").asText();
+            String resourceUri = root.path("item").path("uri").asText();
+            Integer discNumber = root.path("item").path("track_number").asInt();
+            Integer duration_ms = root.path("item").path("duration_ms").asInt();
+            Integer progress_ms = root.path("progress_ms").asInt();
+            boolean isPlaying = root.path("is_playing").asBoolean();
+            String deviceId = ""; // not needed
+            String songName = root.path("item").path("name").asText();
+
+            String[] uriParts = trackUri.split(":");
+            logger.debug("[HelloController] The type of Spotify URI received is: " + uriParts[1]);
+
+
+           // String songName = root_.path("name").asText();
+            List<String> artistsAll = new ArrayList<>();
+
+           // JsonNode artists = root_.path("artists");
+            JsonNode artists = root.path("item").path("artists");
+
+            if (artists.isArray()){
+                for (JsonNode artist: artists){
+                    String artistName = artist.path("name").asText();
+                    artistsAll.add(artistName);
+                }
+            }
+
+            JsonNode images = root.path("item").path("album").path("images");
+            // we take the first image only
+            String imgUrl = images.get(0).path("url").asText();
+            logger.debug("[HC]Got the album image url and it is: " + imgUrl);
+
+            TrackMetadataBeanWeb trackMetadataBean = new TrackMetadataBeanWeb(songName, artistsAll, trackUri, resourceUri, progress_ms, duration_ms, isPlaying, discNumber, true, deviceId, imgUrl);
+            return trackMetadataBean;
+            //logger.debug("Song Name: "+ songName + " Artists: "+ artistsAll.toString());
+            //logger.debug("[HC]Bean from spotify is: " + trackMetadataBean.toString());
+            //trackMetaDataHolder.setData(trackMetadataBean);
+            //myHandler.broadcast(trackMetadataBean);
+        }
+
+
+        logger.debug("[HC] No song playing right now!");
+        TrackMetadataBeanWeb emptyBean = new TrackMetadataBeanWeb("No music playing right now!", List.of(), "No-track", "No-resource", 0, 0, false, 0, true, "No-device-active", "No-img-url");
+        return emptyBean;
+        //trackMetaDataHolder.setData(emptyBean);
+        //myHandler.broadcast(emptyBean);
+
     }
 
     @GetMapping("/api/prev_track")

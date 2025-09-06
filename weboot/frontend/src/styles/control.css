@@ -1,0 +1,135 @@
+
+.control-container{
+    position: absolute;
+    width: 100%;
+    height: 43.5%;
+    top: 56.5%;
+    background-color: #D9D9D9;
+    border-radius: 10px;
+}
+
+
+.Syncin-btn{
+    position: absolute;
+    left: 9.35%;
+    top: 26.51%;
+    width: 33.63%;
+    height: 43%;
+    background-color: #1ED760;
+    border-radius: 40px;
+    cursor: pointer;
+}
+
+.Syncin-btn-disabled{
+    position: absolute;
+    left: 9.35%;
+    top: 26.51%;
+    width: 33.63%;
+    height: 43%;
+    background-color: #535353;
+    border-radius: 40px;
+}
+
+
+.Lockin-btn{
+    position: absolute;
+    left: 49.88%;
+    top: 26.51%;
+    width: 33.63%;
+    height: 43%;
+    background-color: #1ED760;
+    border-radius: 40px;
+    cursor: pointer;
+}
+
+.Lockin-btn-disabled{
+    position: absolute;
+    left: 49.88%;
+    top: 26.51%;
+    width: 33.63%;
+    height: 43%;
+    background-color: #535353;
+    border-radius: 40px;
+}
+
+
+
+.Lockin-mid-btn{
+    position: absolute;
+    left: 33.85%;
+    top: 26.51%;
+    width: 33.63%;
+    height: 43%;
+    background-color: #1ED760;
+    border-radius: 40px;
+    cursor: pointer;
+}
+
+.Lockin-mid-btn-disabled{
+    position: absolute;
+    left: 33.85%;
+    top: 26.51%;
+    width: 33.63%;
+    height: 43%;
+    background-color: #535353;
+    border-radius: 40px;
+}
+
+
+.Lockout-btn{
+    position: absolute;
+    left: 33.85%;
+    top: 26.51%;
+    width: 33.63%;
+    height: 43%;
+    background-color: #1ED760;
+    border-radius: 40px;
+    cursor: pointer;
+}
+
+.Lockout-btn-disabled{
+    position: absolute;
+    left: 33.85%;
+    top: 26.51%;
+    width: 33.63%;
+    height: 43%;
+    background-color: #535353;
+    border-radius: 40px;
+}
+
+
+
+@font-face {
+  font-family: 'Instrument Sans';
+  src: url('../static/fonts/InstrumentSans_Condensed-SemiBold.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Instrument Sans Medium';
+  src: url('../static/fonts/InstrumentSans-Medium.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+
+.btn-text{
+    position: absolute;
+    font-family: 'Instrument Sans Medium';
+    font-weight: 600;
+    font-size: 1.2em;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.btn-text-lockout{
+    position: absolute;
+    font-family: 'Instrument Sans Medium';
+    font-weight: 600;
+    font-size: 1em;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}

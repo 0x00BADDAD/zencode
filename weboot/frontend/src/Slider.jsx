@@ -63,13 +63,13 @@ export default function Slider({elapsedTime, totalTime, isTrack, seekTrack}){
         (async ()=>{await seekTrack(Math.floor(elapsed_))})();
     }
 
-    if(!isTrack){
-        console.log(`currElapse: ${currElapse} and elaspedTime: ${elapsedTime}`);
+    if(isTrack){
+        console.log(`!!currElapse: ${currElapse} and elaspedTime: ${elapsedTime} and totalTime: ${totalTime}`);
     }
 
     let perCent = (elapsedTime / totalTime) * 100;
-    console.log(`--------------------->the value of perCent is: ${perCent}`);
-    if(seeking && !isTrack){
+    console.log(`**************>the value of perCent is: ${perCent}`);
+    if(seeking){
         perCent = (currElapse / totalTime) * 100;
         if(!isDragging){
             if(Math.abs(elapsedTime - Math.floor(currElapse)) < 3000){setSeeking(prev=>false);}

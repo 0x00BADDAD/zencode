@@ -20,7 +20,7 @@ export default function PlayButton({disable, pauseHandler, resumeHandler, is_pla
     }
 
     return (
-        <div className={disable ? "pause-play disabled-control": "pause-play"} onClick={clickHandler}>
+        <div className={disable ? "pause-play-disabled-control": "pause-play"} onClick={()=>{if(!disable){clickHandler();}}}>
                 <img src={isPaused ? play : pause}
                  style={{
                     width:"50%",
@@ -29,7 +29,9 @@ export default function PlayButton({disable, pauseHandler, resumeHandler, is_pla
                     position: 'absolute',
                     top: '50%',
                     left: '50%',
-                     transform: `translate(-${!isPaused ? 50 : 40}%, -50%)`
+                    transform: `translate(-${!isPaused ? 50 : 40}%, -50%)`,
+                     backgroundColor: `${disable ? "#B7AEAE" : "#FFFFFF"}`,
+                    opacity: `${disable ? "0.3" : "1"}`
                 }}
             /></div>
     )

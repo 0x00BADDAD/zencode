@@ -8,10 +8,12 @@ export const trackMetaDataReducer = (currTrackMetaData, action) =>{
                 track_uri: action.track_uri,
                 resource_uri: action.resource_uri,
                 progress_ms: action.progress_ms,
+                duration_ms: action.duration_ms,
                 is_playing : action.is_playing,
                 name: action.name,
                 artists: action.artists,
-                disc_number: action.disc_number
+                disc_number: action.disc_number,
+                img_url: action.img_url
             }
         }
     }

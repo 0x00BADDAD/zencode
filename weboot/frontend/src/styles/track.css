@@ -60,6 +60,18 @@ img {
     border-radius: 100px;
 }
 
+.pause-play-disabled-control{
+    position: absolute;
+    top: 41.7%;
+    left: 55.2%;
+    width: 13.2%;
+    /*height: 51.64%;*/
+    aspect-ratio: 1;
+    background-color: #B7AEAE;
+    border: 2px solid #B7AEAE;
+    border-radius: 100px;
+}
+
 .timeline{
     position: absolute;
     top: 82%;
@@ -111,14 +123,14 @@ img {
 
 @font-face {
   font-family: 'Instrument Sans';
-  src: url('../static/fonts/InstrumentSans_Condensed-SemiBold.ttf') format('ttf');
+  src: url('../static/fonts/InstrumentSans_Condensed-SemiBold.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
 }
 
 @font-face {
   font-family: 'Instrument Sans Medium';
-  src: url('../static/fonts/InstrumentSans-Medium.ttf') format('ttf');
+  src: url('../static/fonts/InstrumentSans-Medium.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
 }
@@ -129,7 +141,7 @@ img {
     left: 0%;
     width: 65%;
     height: 65%;
-    font-family: 'Instrument Sans', sans-serif; /* fallback if font missing */
+    font-family: 'Instrument Sans', monospace; /* fallback if font missing */
     font-size: 30px;   /* size in px, rem, or em */
     font-weight: 600; /* semi-bold */
     overflow: hidden;       /* hide the overflowing text */
@@ -160,6 +172,7 @@ img {
     display: inline-block;
     left: 0%;
     top: 0%;
+    font-family: 'Instrument Sans Medium'; /* fallback if font missing */
     /*height:100%;*/
    /* width: 100%;*/
    /* animation: scroll-first 5s linear 1;
@@ -184,15 +197,8 @@ img {
 
 @keyframes scroll {
  0% {
-    /*transform: translateX(100%);  /* start at right edge */
      left: 100%;
   }
- /* 40% {
-    transform: translateX(100%); /* fully scrolled left */
- /* }
-  40% {
-    transform: translateX(-200%); /* hold at left for pause */
- /* }*/
   100% {
      transform: translateX(-100%);
   }
@@ -200,8 +206,8 @@ img {
 
 
 .artist-name{
-    font-family: 'Instrument Sans Medium', sans-serif;
-    font-weight: 500;
+    font-family: 'Instrument Sans', sans-serif;
+    font-weight: 100;
     position: absolute;
     white-space: nowrap;        /* keep text in a single line */
     overflow: hidden;           /* hide anything that overflows */
@@ -210,7 +216,7 @@ img {
     /* 15.02 x 30.44 (278.96 x 53.77) | 130 x 14.28 */
     left: 5.38%;
     width: 46.6%;
-    height: 31%;
+    height: 36%;
 }
 
 
