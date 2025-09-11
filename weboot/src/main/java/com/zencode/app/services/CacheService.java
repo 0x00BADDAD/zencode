@@ -55,7 +55,6 @@ public class CacheService {
 
     }
 
-    @Cacheable("refreshTokenCache")
     public String getRefreshToken(String email){
         // logic to fetch the refresh token from spotify backend with help of auth code
         if (email.equals("admin")){
@@ -68,7 +67,7 @@ public class CacheService {
 
     @Cacheable("accessTokenCache")
     public String getAccessToken(String email){
-            String refreshToken = getRefreshToken(email);
+            String refreshToken = "AQCvmM6MO6ZOK9diYgAKVTMm5aDFR9CYbNIaqHG8BaAb3xPZCjJsrsk5rOwsqg7DEBYsQEv-Q_syPBblSW971XahKWnu0Ch6DIs5-n85umtnRPpT36FN1PQ4rDK43a-KDcw";
 
             RestClient restClient = RestClient.create();
             String clientId = "9469751d45ca49cea94be50c071a3c65";

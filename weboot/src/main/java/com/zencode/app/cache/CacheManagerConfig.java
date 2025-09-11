@@ -64,20 +64,21 @@ public class CacheManagerConfig {
 
         Map<String, RedisCacheConfiguration> cacheConfigurations = new HashMap<>();
 
-        // Cache "users" with 10 minutes TTL
+        // Cache "sessions" with 5 days TTL
         cacheConfigurations.put("sessions",
                 RedisCacheConfiguration.defaultCacheConfig()
                         .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
                         .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
                         .entryTtl(Duration.ofDays(5)));
 
-        // Cache "products" with 1 hour TTL
+        // Cache "refresh Token" with 5 days TTL
         cacheConfigurations.put("refTok",
                 RedisCacheConfiguration.defaultCacheConfig()
                         .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
                         .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
                         .entryTtl(Duration.ofDays(5)));
 
+        // Cache "access Token" with 40 minutes of TTL
         cacheConfigurations.put("accTok",
                 RedisCacheConfiguration.defaultCacheConfig()
                         .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))

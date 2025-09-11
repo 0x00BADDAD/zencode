@@ -61,7 +61,7 @@ public class SpotifyTasks {
     private MyHandler myHandler;
 
 
-    @Scheduled(fixedRate = 2000)
+    @Scheduled(fixedRate = 1500)
     public void fetchCurrSong(){
             String accessToken = cacheService.getAccessToken("admin");
             RestClient restClient = RestClient.create();
@@ -76,9 +76,21 @@ public class SpotifyTasks {
                 .body(JsonNode.class);
             if (root != null){
 
+                String context = root.path("context").path("type").asText();
+                boolean isShow = true;
+                if(context != null){
+                    isShow = context.equals("show");
+                }
+                if(isShow){
+                    TrackMetadataBean showBean = new TrackMetadataBean("It seems Atharv is listening to a podcast!", List.of(), "No-track", "No-resource", 0, 0, false, 0, true, "No-device-active", "No-img-url", false, false);
+                    trackMetaDataHolder.setData(showBean);
+                    myHandler.broadcast(showBean);
+                    return;
+                }
+
                 String trackHref = root.path("item").path("href").asText();
-                String trackUri = root.path("item").path("album").path("uri").asText();
-                String resourceUri = root.path("item").path("uri").asText();
+                String resourceUri = root.path("item").path("album").path("uri").asText();
+                String trackUri = root.path("item").path("uri").asText();
                 Integer discNumber = root.path("item").path("track_number").asInt();
                 Integer duration_ms = root.path("item").path("duration_ms").asInt();
                 Integer progress_ms = root.path("progress_ms").asInt();
@@ -88,7 +100,6 @@ public class SpotifyTasks {
 
                 String[] uriParts = trackUri.split(":");
                 logger.debug("The type of Spotify URI received is: " + uriParts[1]);
-
 
                // String songName = root_.path("name").asText();
                 List<String> artistsAll = new ArrayList<>();
@@ -108,14 +119,14 @@ public class SpotifyTasks {
                 String imgUrl = images.get(0).path("url").asText();
                 logger.debug("Got the album image url and it is: " + imgUrl);
 
-                TrackMetadataBean trackMetadataBean = new TrackMetadataBean(songName, artistsAll, trackUri, resourceUri, progress_ms, duration_ms, isPlaying, discNumber, true, deviceId, imgUrl);
+                TrackMetadataBean trackMetadataBean = new TrackMetadataBean(songName, artistsAll, trackUri, resourceUri, progress_ms, duration_ms, isPlaying, discNumber, true, deviceId, imgUrl, false, false);
                 //logger.debug("Song Name: "+ songName + " Artists: "+ artistsAll.toString());
                 logger.debug("Bean from spotify is: " + trackMetadataBean.toString());
                 trackMetaDataHolder.setData(trackMetadataBean);
                 myHandler.broadcast(trackMetadataBean);
             }else{
                 logger.debug("No song playing right now!");
-                TrackMetadataBean emptyBean = new TrackMetadataBean("No music playing right now!", List.of(), "No-track", "No-resource", 0, 0, false, 0, true, "No-device-active", "No-img-url");
+                TrackMetadataBean emptyBean = new TrackMetadataBean("No music playing right now!", List.of(), "No-track", "No-resource", 0, 0, false, 0, true, "No-device-active", "No-img-url", false, false);
                 trackMetaDataHolder.setData(emptyBean);
                 myHandler.broadcast(emptyBean);
             }

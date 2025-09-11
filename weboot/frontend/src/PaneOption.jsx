@@ -19,7 +19,7 @@ export default function PaneOption({id, offset, isLast, setIsOpen, transferHandl
         }}
         onMouseEnter={()=>setHovered(prev=>true)}
         onMouseLeave={()=>setHovered(prev=>false)}
-        onClick={()=>{setIsOpen(prev=>false); transferHandler();}}
+            onClick={()=>{setIsOpen(prev=>false); (async ()=>{await transferHandler();})()}}
         >
             <div className="pane-choice" style={{fontWeight: "0"}}>
                 {id}

@@ -133,3 +133,21 @@
     left: 50%;
     transform: translate(-50%, -50%);
 }
+
+
+.open-spotify-msg{
+    position: absolute;
+    width: 100%;
+    height: 80%;
+    left: 2%;
+    top: 5%;
+}
+
+.open-spotify-msg-text{
+    position: absolute;
+    font-family: 'Instrument Sans Medium';
+    font-weight: 600;
+    font-size: 1em;
+    left: 0%;
+    top: 0%;
+}

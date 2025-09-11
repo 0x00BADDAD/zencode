@@ -2,7 +2,7 @@ import {useState, useRef, useEffect} from 'react';
 
 
 
-export default function Slider({elapsedTime, totalTime, isTrack, seekTrack}){
+export default function Slider({elapsedTime, totalTime, isTrack, seekTrack, isInActive}){
     const [isDragging, setIsDragging] = useState(false);
     const [currElapse, setCurrElapse] = useState(elapsedTime);
     const [seeking, setSeeking] = useState(false);
@@ -78,11 +78,14 @@ export default function Slider({elapsedTime, totalTime, isTrack, seekTrack}){
         perCent = (elapsedTime / totalTime) * 100;
     }
 
-
+    if(isInActive){perCent=0;}
     //const perCent = (!isTrack && isDragging) ? (currElapse / totalTime) * 100 : (elapsedTime / totalTime) * 100;
 
     return (
         <div ref={timelineRef} className="timeline" onClick={!isTrack ? onClickHandler: ()=>{}}
+            style={{
+                cursor: `${isTrack? 'text': 'pointer'}`
+            }}
             style={{ background: `linear-gradient(to right, red ${perCent}%, #D9D9D9 ${perCent}%)` }}
         >
             <div className={isDragging? "timeline-pointer" : "timeline-pointer"}

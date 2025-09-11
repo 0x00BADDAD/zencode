@@ -42,10 +42,8 @@ export default function SpotifyPLayer(){
     const [initPlayer, setInitPlayer] = useState(false);
 
     const [loadingNextTrack, setLoadingNextTrack] = useState(false);
-    const loadingNextTrackRef = useRef(false);
 
     const [loadingPrevTrack, setLoadingPrevTrack] = useState(false);
-    const loadingPrevTrackRef = useRef(false);
 
     const [transferringPlayback, setTransferringPlayback] = useState(false);
     // currTrackMetaData is the most updated value of the track meta data right from the
@@ -59,6 +57,7 @@ export default function SpotifyPLayer(){
     const newPlaybackId = useRef(null);
 
     const [newPlaybackActive, setNewPlaybackActive] = useState(false);
+    const [currDeviceId, setCurrDeviceId] = useState(null);
     //const [playbackTransferred, setPlaybackTransferred] = useState(false);
 
 
@@ -73,6 +72,9 @@ export default function SpotifyPLayer(){
     };
 
     const [metaData, setMetaData] = useState(initialMetaData);
+    const [metaDataFinal, setMetaDataFinal] = useState(initialMetaData);
+
+  // const [changeInTrackUriFromBackend, setChangeInTrackUriFromBackend] = useState(false);
 
     //const [playerUri, setPlayerUri] = useState(currTrackMetaData.track_uri);
     // const [playerUri, setPlayerUri] = useState('');
@@ -94,15 +96,14 @@ export default function SpotifyPLayer(){
         setTransferringPlayback(true);
             console.log('transferring playback to Device ID ', device_id); //  this is what you use
             // transferring playback
-            const resp = await fetch('http://127.0.0.1:3000/api/transfer_playback', {
-            method: 'POST',
-            body: JSON.stringify({ device_ids: [device_id], play: true }),
-            headers: {
-              'Content-Type': 'application/json'
-              },
-            });
+            const params = new URLSearchParams();
+            params.append("device_id", device_id);
+            const resp = await fetch(`http://127.0.0.1:3000/api/transfer_playback?${params.toString()}`);
+            if(!resp.ok){
+                throw new Error("Something went wrong when transferring playback...");
+            }
             const resp_ = await resp.json();
-        setTransferringPlayback(false);
+            setTransferringPlayback(false);
             console.log(`Transferred playback! response: ${resp_}`);
     }
 
@@ -130,6 +131,8 @@ export default function SpotifyPLayer(){
     }
 
     async function syncTrack(){
+    const isTrackInActive = currTrackMetaData.name === "No music playing right now!" || currTrackMetaData.name === "It seems Atharv is listening to a podcast!";
+        if(isTrackInActive){return;}
         const params = new URLSearchParams();
         params.append('track_uri', currTrackMetaData.track_uri);
         params.append('position', currTrackMetaData.progress_ms);
@@ -137,6 +140,8 @@ export default function SpotifyPLayer(){
         params.append('is_playing', currTrackMetaData.is_playing);
         params.append('disc_number', currTrackMetaData.disc_number);
         params.append('resource_uri', currTrackMetaData.resource_uri);
+        const deviceId = (newPlaybackActive ? newPlaybackId.current : oldPlaybackId.current);
+        params.append('device_id', deviceId);
         setSyncing(prev=>true);
         const resp = await fetch(`http://127.0.0.1:3000/api/play_track?${params.toString()}`);
         // only after the above fetch has been done
@@ -151,20 +156,10 @@ export default function SpotifyPLayer(){
     }
 
     async function nextTrack(){
-        if(loadingNextTrack) return;
-        const newMetaData_ = {
-            loadingNext: true
-        };
-        setMetaData(prev=>newMetaData_);
-        //setLoadingNextTrack(prev=>true);
-        //loadingNextTrackRef.current = true;
         if(newPlaybackActive){
             playerRef.nextTrack().then(() => {
               console.log('Skipped to next track!');
             });
-            //setLoadingNextTrack(false);
-            //setLoadingNextTrack(prev=>false);
-            //loadingNextTrackRef.current = false;
             return;
         }
         const params = new URLSearchParams();
@@ -175,27 +170,9 @@ export default function SpotifyPLayer(){
             throw new Error("fetch to play the next track didn't work");
         }
         const jsonResp = await resp.json();
-        console.log(`[from next track]value of artists is: ${jsonResp.artists}`);
-        const newMetaData = {
-            track_uri: jsonResp.track_uri,
-            progress_ms: jsonResp.progress_ms,
-            duration_ms: jsonResp.duration_ms,
-            name: jsonResp.name,
-            is_playing: jsonResp.is_playing,
-            artists: jsonResp.artists,
-            img_url: jsonResp.img_url,
-            loadingNext: false
-        };
-
-        setMetaData(prev=>newMetaData);
-        //setLoadingNextTrack(prev=>false);
-        //loadingNextTrackRef.current = false;
-        //setLoadingNextTrack(false);
-       // setOutOfSync(true);
     }
 
     async function prevTrack(){
-        setLoadingPrevTrack(prev=>true);
         if(newPlaybackActive){
             playerRef.previousTrack().then(() => {
               console.log('Set to previous track!');
@@ -208,9 +185,8 @@ export default function SpotifyPLayer(){
         // TODO: something to return from this request
         const resp = await fetch(`http://127.0.0.1:3000/api/prev_track?${params.toString()}`);
         if(!resp.ok){
-            throw new Error("fetch to play the next track didn't work");
+            throw new Error("fetch to play the prev track didn't work");
         }
-        //setLoadingPrevTrack(false);
     }
 
     async function pauseTrack(){
@@ -226,6 +202,7 @@ export default function SpotifyPLayer(){
     async function resumeTrack(){
         const params = new URLSearchParams();
         params.append('session_id', sessionId);
+        params.append('device_id', oldPlaybackId.current);
         const resp = await fetch(`http://127.0.0.1:3000/api/resume_track?${params.toString()}`);
         if(!resp.ok){
             throw new Error("fetch to resume the track didn'tm work");
@@ -388,70 +365,33 @@ export default function SpotifyPLayer(){
                   try {
                     const data = JSON.parse(event.data); // if message is JSON
                     console.log(`data recd in player socket is: ${data}`);
-                    const {name, track_uri, resource_uri, artists , progress_ms, duration_ms, is_playing, disc_number, atharv_track, device_id, img_url}= data;
+                    const {name, track_uri, resource_uri, artists , progress_ms, duration_ms, is_playing, disc_number, atharv_track, device_id, img_url, can_skip_prev, is_in_sync}= data;
 
 
                       if(!atharv_track && !newPlaybackActive){
 
-
-                          if(oldPlaybackId.current == null){
+                          if(oldPlaybackId.current === null || oldPlaybackId.current === "No-device-active" || (oldPlaybackId.current !== device_id && newPlaybackId.current !== device_id)){
                                 oldPlaybackId.current = device_id;
                           }
+                                setCurrDeviceId(device_id);
 
                           console.log(`value of deviceId for the remote device is: ${device_id}`);
-                          //const newMetaData = {
-                          //    name: name,
-                          //    artists: artists,
-                          //    track_uri: track_uri,
-                          //    progress_ms: progress_ms,
-                          //    is_playing: is_playing,
-                          //    disc_number: disc_number,
-                          //    resource_uri: resource_uri
-                          //};
 
-
-                           const newMetaData = {
+                          const newMetaData = {
                                track_uri: track_uri,
                                progress_ms: progress_ms,
                                duration_ms: duration_ms,
                                name: name,
                                is_playing: is_playing,
+                               disc_number: disc_number,
                                artists: artists,
-                               img_url: img_url
+                               img_url: img_url,
+                               can_skip_prev: can_skip_prev
                            };
 
 
                             if (!metaData || track_uri !== metaData.track_uri || progress_ms !== metaData.progress_ms || is_playing !== metaData.is_playing){
-                                console.log(`---@@@@@---value of the loadingNextTrackRef.current: ${loadingNextTrackRef.current}`);
-                                if( ! (!!(metaData.loadingNext)) ){
                                     setMetaData(prev=>newMetaData);
-                                }
-                                //if(!(loadingNextTrackRef.current || loadingPrevTrackRef.current)){
-                                //    console.log("whoops was in here!! and could not set the metaData");
-                                //    setMetaData(prev=>newMetaData);
-                                //    // No op
-                                //    //setMetaData(prev => newMetaData);
-                                //    //setLoadingNextTrack(prev=>true);
-                                //}
-                               //else if(name !== metaData.name && loadingNextTrackRef.current){
-                               //    setMetaData(prev => newMetaData);
-                               //    console.log(`yiyiyiyiyiyiyiyi setting the laoding state to be false...`);
-                               //    loadingNextTrackRef.current = false;
-                               //    setTriggerLoadingNextTrack(prev=>!prev);
-                               //}else{
-                               //    setMetaData(prev=>newMetaData);
-                               //}
-                               //if(loadingNextTrackRef.current){
-                               //    console.log("------8-8-8-8-8-8--was here loadingNextTrack.....");
-                               //    setLoadingNextTrack(prev=>false);
-                               //    loadingNextTrackRef.current = false;
-                               //}
-
-                               //setCurrTrackUri(prev => track_uri);
-                               //trackMetaDataDispatch({
-                               //     type: "update",
-                               //     ...newMetaData
-                               // });
                             }
                       }
                   } catch (e) {
@@ -488,47 +428,105 @@ export default function SpotifyPLayer(){
     },[disableWebSocket]);
 
 
+// effect that will only commit the final state if next track is not true
+    useEffect(()=>{
+            if(!loadingNextTrack && !loadingPrevTrack){
+                    setMetaDataFinal(prev=>metaData);
+            }else{
+                if(metaDataFinal.track_uri && (metaDataFinal.track_uri !== metaData.track_uri || metaDataFinal.name !== metaData.name)){
+                    setMetaDataFinal(prev=>metaData);
+                    if(loadingNextTrack){
+                        setLoadingNextTrack(prev=>false);
+                    }
+                    if(loadingPrevTrack){
+                        setLoadingPrevTrack(prev=>false);
+                    }
+                }else{
+                    if(newPlaybackActive){
+                        setMetaDataFinal(prev=>metaData);
+                        if(loadingNextTrack){
+                            setLoadingNextTrack(prev=>false);
+                        }
+                        if(loadingPrevTrack){
+                            setLoadingPrevTrack(prev=>false);
+                        }
+                    }else{
+                        setLoadingPrevTrack(prev=>true);
+                        setLoadingNextTrack(prev=>true);
+                    }
+                }
+            }
+    },[metaData]);
+
 
         const [disableSyncUpdates, setDisableSyncUpdates] = useState(false);
         useEffect(() => {
             //if(loadingNextTrack){
             //    setLoadingNextTrack(prev=>false);
             //}
+            if(!syncing && outOfSync && keepInSync && currDeviceId !== "No-device-active"){
+                (async ()=>{
+                    await syncTrack();
+                })();
+                return;
+            }
             if(disableSyncUpdates){
                 console.log("disabled the sync updates");
                 return;
             }
             console.log("running that effect");
-            const newOutOfSync = !(currTrackMetaData.track_uri && currTrackMetaData.track_uri === metaData.track_uri && Math.abs(currTrackMetaData.progress_ms-metaData.progress_ms) < 5000 && currTrackMetaData.is_playing === metaData.is_playing);
+            const newOutOfSync = !(currTrackMetaData.track_uri && currTrackMetaData.track_uri === metaDataFinal.track_uri && Math.abs(currTrackMetaData.progress_ms-metaDataFinal.progress_ms) < 6000 && currTrackMetaData.is_playing === metaDataFinal.is_playing);
+            console.log(`value of newOutOfSync is : ${newOutOfSync} and keepInSync : ${keepInSync}`);
+            if(syncing){
+                if(!newOutOfSync){
+                    setSyncing(prev => false);
+                }else{
+                    console.log(`hehehehehehehehe tried to sync incorreclty!`);
+                        (async ()=>{
+                            await syncTrack();
+                        })();
+                }
+            }
 
             if(outOfSync !== newOutOfSync){
                 if(newOutOfSync && !keepInSync){
                     console.log("Yup was here indeeeeeeeed!");
                     setCurrStatus(prev=>1);
                 }
-                if(syncing && !newOutOfSync){
-                    setSyncing(prev => false);
-                }
                 setOutOfSync(prev => newOutOfSync);
             }
 
 
-        }, [disableSyncUpdates, metaData, currTrackMetaData]);
+        }, [disableSyncUpdates, currTrackMetaData]);
 
 
 
     let isIn = false;
     useEffect(()=>{
-        if(isIn){return;}
-        isIn = true;
+        //if(isIn){return;}
+       // isIn = true;
         console.log("is in the useEffect");
 
-        if(outOfSync && keepInSync){
-                          const onlyPaused = (currTrackMetaData.track_uri && currTrackMetaData.track_uri === metaData.track_uri && Math.abs(currTrackMetaData.progress_ms-metaData.progress_ms) < 5000) && currTrackMetaData.is_playing !== metaData.is_playing;
+    const isInActive_ = metaDataFinal.name === "No music playing right now!" || metaDataFinal.name === "It seems Atharv is listening to a podcast!" || oldPlaybackId.current === "No-device-active";
+        console.log(`value of isInActive_: ${isInActive_}`);
+    const isTrackInActive = currTrackMetaData.name === "No music playing right now!" || currTrackMetaData.name === "It seems Atharv is listening to a podcast!";
+
+        if(outOfSync && keepInSync && !isInActive_ && !isTrackInActive){
+                          const onlyPaused = (currTrackMetaData.track_uri && currTrackMetaData.track_uri === metaDataFinal.track_uri && Math.abs(currTrackMetaData.progress_ms-metaDataFinal.progress_ms) < 6000) && currTrackMetaData.is_playing !== metaDataFinal.is_playing && !currTrackMetaData.is_playing;
             if (!onlyPaused || currTrackMetaData.is_playing){
+                console.log("xxxxxxx Trying to sync yet again xxxxxxx");
                                 (async ()=>{
-                                await syncTrack();
-                               })();
+                                    await syncTrack();
+                                    if(!currTrackMetaData.is_playing){
+                                        if(newPlaybackActive){
+                                            playerRef.pause().then(() => {
+                                                  console.log('Paused!');
+                                            });
+                                        }else{
+                                            (async ()=>{await pauseTrack();})();
+                                        }
+                                    }
+                                })();
                 //syncTrack2();
 
             }else{
@@ -542,9 +540,9 @@ export default function SpotifyPLayer(){
             }
             console.log("completed the request");
         }
-        isIn = false;
+        //isIn = false;
         console.log("going out of useEffect");
-    }, [outOfSync, keepInSync]);
+    }, [outOfSync, keepInSync, currDeviceId]);
 
 
 
@@ -558,22 +556,24 @@ export default function SpotifyPLayer(){
                    const trackObj = state.track_window.current_track;
                    const img_url = trackObj.album.images[0].url;
                    let duration_ms = 0;
-                   (async ()=>{duration_ms = await getDuration(trackObj.id);})();
+                   (async ()=>{
+                       duration_ms = await getDuration(trackObj.id);
+                       const newMetaData = {
+                           track_uri: trackObj.uri,
+                           progress_ms: state.position,
+                           duration_ms: Math.max(metaData.duration_ms, duration_ms),
+                           name: state.track_window.current_track.name,
+                           is_playing: !state.paused,
+                           artists: state.track_window.current_track.artists.map(artist => {
+                               return artist.name;
+                           }),
+                           img_url: img_url
+                       };
+                       console.log("setting metadata");
+                       setMetaData(prev => newMetaData);
+                   })();
                    console.log(`found the duration of the song it was, ${duration_ms}`);
 
-                   const newMetaData = {
-                       track_uri: state.context.uri,
-                       progress_ms: state.position,
-                       duration_ms: Math.max(metaData.duration_ms, duration_ms),
-                       name: state.track_window.current_track.name,
-                       is_playing: !state.paused,
-                       artists: state.track_window.current_track.artists.map(artist => {
-                           return artist.name;
-                       }),
-                       img_url: img_url
-                   };
-                    console.log("setting metadata");
-                    setMetaData(prev => newMetaData);
                     console.log("was here setting initPlayer");
                     if(!initPlayer){setInitPlayer(prev => true);}
             });
@@ -625,28 +625,46 @@ export default function SpotifyPLayer(){
 
                    const trackObj = state.track_window.current_track;
                    const img_url = trackObj.album.images[0].url;
-                   let duration_ms = 0;
-                   (async ()=>{duration_ms = await getDuration(trackObj.id);})();
-                   console.log(`found the duration of the song it was, ${duration_ms}`);
+                   let duration_ms = metaData.duration_ms;
+                    if(trackObj.uri !== metaData.track_uri){
+                        console.log(`hooorahhhhhhh getting duration bayyyyyyyyyyyyyyyyyyyy`);
+                        (async ()=>{
+                           duration_ms = await getDuration(trackObj.id);
+                           const newMetaData = {
+                               track_uri: trackObj.uri,
+                               progress_ms: state.position,
+                               duration_ms: duration_ms,
+                               name: state.track_window.current_track.name,
+                               is_playing: !state.paused,
+                               artists: state.track_window.current_track.artists.map(artist => {
+                                   return artist.name;
+                               }),
+                               img_url: img_url
+                           };
+                          setMetaData(prev => newMetaData);
+                        })();
+                        console.log(`found the duration of the song it was, ${duration_ms}`);
+                    }else{
+                           const newMetaData = {
+                               track_uri: trackObj.uri,
+                               progress_ms: state.position,
+                               duration_ms: duration_ms,
+                               name: state.track_window.current_track.name,
+                               is_playing: !state.paused,
+                               artists: state.track_window.current_track.artists.map(artist => {
+                                   return artist.name;
+                               }),
+                               img_url: img_url
+                           };
+                          setMetaData(prev => newMetaData);
+                    }
 
-                   const newMetaData = {
-                       track_uri: state.context.uri,
-                       progress_ms: state.position,
-                       duration_ms: duration_ms,
-                       name: state.track_window.current_track.name,
-                       is_playing: !state.paused,
-                       artists: state.track_window.current_track.artists.map(artist => {
-                           return artist.name;
-                       }),
-                       img_url: img_url
-                   };
                     //if(loadingPrevTrack.current){
                     //    setLoadingPrevTrack(prev=>false);
                     //}
                     //if(loadingNextTrack.current){
                     //    setLoadingNextTrack(prev=>false);
                     //}
-                    setMetaData(prev => newMetaData);
 
                 });
             }, 1500);
@@ -663,14 +681,15 @@ export default function SpotifyPLayer(){
 
     async function transferNewPlayback(){
         await transferPlayback(newPlaybackId.current);
-        setNewPlaybackActive(true);
+        setNewPlaybackActive(prev=>true);
     }
 
 
 
     async function transferOldPlayback(){
-        setNewPlaybackActive(false);
-        setInitPlayer(false);
+        setNewPlaybackActive(prev=>false);
+        setInitPlayer(prev=>false);
+        console.log(`oooooooooooo the old playback device id is: ${oldPlaybackId.current}`);
         await transferPlayback(oldPlaybackId.current);
     }
 
@@ -678,17 +697,22 @@ export default function SpotifyPLayer(){
 
     const [currStatus, setCurrStatus] = useState(1);
 
+    const isInActive = metaDataFinal.name === "No music playing right now!" || metaDataFinal.name === "It seems Atharv is listening to a podcast!" || oldPlaybackId.current === "No-device-active";
     //const prettyJson = JSON.stringify(metaData, undefined, 2);
-    const currMetaDataToBePassed = keepInSync ? currTrackMetaData : metaData;
+    const isTrackInActive = currTrackMetaData.name === "No music playing right now!" || currTrackMetaData.name === "It seems Atharv is listening to a podcast!";
+    const currMetaDataToBePassed = (keepInSync && !isInActive && !isTrackInActive) ? currTrackMetaData : metaDataFinal;
 
-    console.log(`currTrackMetaData.duaration_ms: ${currTrackMetaData.duration_ms}`);
-
-    const rendering = ((!initPlayer && newPlaybackActive) || loadingNextTrack || loadingPrevTrack || syncing || transferringPlayback);
+    console.log(`currTrackMetaData.duration_ms: ${currTrackMetaData.duration_ms}`);
+    const rendering = ((!initPlayer && newPlaybackActive) || loadingNextTrack || loadingPrevTrack || syncing || transferringPlayback || metaDataFinal.name === "No Name");
+    console.log(`value of syncing is: ${syncing}`);
     return ( <div className="player-container">
         {
                 <Player
                              rendering={rendering}
                              currStatus={currStatus}
+                             isInActive={isInActive}
+                             isTrackInActive={isTrackInActive}
+                             canSkipPrev={(!newPlaybackActive && metaDataFinal.can_skip_prev) || newPlaybackActive}
                              metaData={currMetaDataToBePassed}
                              activeDeviceId={newPlaybackActive ? "This-device" : "Other-device"}
                              deviceIds={deviceIds}
@@ -696,8 +720,8 @@ export default function SpotifyPLayer(){
                              resumeTrackHandleOldAndNew={resumeTrackHandleOldAndNew}
                              nextTrack={nextTrack}
                              setLoadingNextTrack={setLoadingNextTrack}
-                             loadingNextTrackRef={loadingNextTrackRef}
                              prevTrack={prevTrack}
+                             setLoadingPrevTrack={setLoadingPrevTrack}
                              transferOldPlayback={transferOldPlayback}
                              transferNewPlayback={transferNewPlayback}
                              seekTrack={seekTrack}
@@ -724,7 +748,7 @@ export default function SpotifyPLayer(){
                         />
                     </div>
         }
-        {
+        {!isInActive && !isTrackInActive &&
             <PlayerControls
                 disabled={rendering}
                 currStatus={currStatus}
@@ -732,6 +756,15 @@ export default function SpotifyPLayer(){
                 syncTrack={syncTrack}
                 setKeepInSync={setKeepInSync}
             />
+        }
+        {isInActive &&
+            <div className="control-container">
+                <div className="open-spotify-msg">
+                    <div className="open-spotify-msg-text">
+                        Seems like spotify is offline. May be open the app on your mobile?
+                    </div>
+                </div>
+            </div>
         }
         </div>
       )

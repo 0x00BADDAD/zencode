@@ -10,6 +10,7 @@ import starboy from './static/images/starboy.png';
 import play from './static/images/play.png';
 import pause from './static/images/pause.png';
 import next from './static/images/next.png';
+import record_img from './static/images/record_img.png';
 
 
 export default function SpotifyTrack() {
@@ -44,7 +45,7 @@ export default function SpotifyTrack() {
                                 is_playing: is_playing,
                                 disc_number: disc_number,
                                 resource_uri: resource_uri,
-                                img_url: img_url
+                                img_url: img_url,
                             };
 
                             if (!metaData || resource_uri !== metaData.resource_uri || progress_ms !== metaData.progress_ms || is_playing !== metaData.is_playing){
@@ -71,19 +72,19 @@ export default function SpotifyTrack() {
                 ws.onclose = () => {
                   console.log("WebSocket connection closed");
                 };
-            wsRefDispatch({
-                type: 'enabled',
-                wsRef: ws
-            });
+           // wsRefDispatch({
+           //     type: 'enabled',
+           //     wsRef: ws
+           // });
         }
 
             // Cleanup on component unmount
             return () => {
                 if(!disableWebSocket){
-                    wsRefDispatch({
-                        type: 'enabled',
-                        wsRef: null
-                    });
+                   // wsRefDispatch({
+                   //     type: 'enabled',
+                   //     wsRef: null
+                   // });
                     ws.close();
                 }
             };
@@ -94,10 +95,14 @@ export default function SpotifyTrack() {
 
     //const prettyJson = JSON.stringify(metaData, undefined, 2);
     //const deviceIds = ["This-device-1", "This-device-2", "This-device-3"];
+    const [loadingCoverPic, setLoadingCoverPic] = useState(false);
     const showLoadingBanner = Object.keys(metaData).length === 0;
+    const isInActive = metaData.name==="No music playing right now!" || metaData.name==="It seems Atharv is listening to a podcast!";
     return showLoadingBanner ? (<LoadingBanner track={true}/>) : (
         <div className="track">
-            <div className="cover-pic"><img src={metaData.img_url}/></div>
+            {loadingCoverPic ? (<div className="loading-cover-pic"></div>) :
+                    (<div className="cover-pic"><img src={!isInActive ? metaData.img_url : record_img} onLoadStart={()=>setLoadingCoverPic(prev=>true)} onLoad={()=>setLoadingCoverPic(prev=>false)}/></div>)
+            }
             <div className="song-info">
                 <ScrollingBanner songName={metaData.name}/>
                 <div className="artist-name">{metaData.artists.reduce((acc, currArtist)=>{ if(acc){ return acc + ", " + currArtist;}else{ return currArtist}}, "")}</div>
@@ -123,7 +128,7 @@ export default function SpotifyTrack() {
             /></div>
             <div className="next-track" style={{opacity: "0.3"}}><img src={next}/></div>
             <div className="prev-track" style={{opacity: "0.3"}}><img src={next} style={{transform: "rotate(180deg)"}}/></div>
-            <Slider elapsedTime={metaData.progress_ms} totalTime={metaData.duration_ms} isTrack={true}/>
+            <Slider elapsedTime={metaData.progress_ms} totalTime={metaData.duration_ms} isTrack={true} isInActive={isInActive}/>
             { /*<div className="timeline"></div>*/}
         </div>
     );

@@ -44,10 +44,17 @@ public class TrackMetadataBean {
     @JsonProperty("img_url")
     private String imgUrl;
 
+    @JsonProperty("can_skip_prev")
+    private boolean canSkipPrev;
+
+    @JsonProperty("is_in_sync")
+    private boolean isInSync;
+
+
     public TrackMetadataBean() {
     }
 
-    public TrackMetadataBean(String name, List<String> artists, String trackUri, String resourceUri, Integer progress_ms, Integer duration_ms, boolean isPlaying, Integer discNumber, boolean atharvTrack, String deviceId, String imgUrl){
+    public TrackMetadataBean(String name, List<String> artists, String trackUri, String resourceUri, Integer progress_ms, Integer duration_ms, boolean isPlaying, Integer discNumber, boolean atharvTrack, String deviceId, String imgUrl, boolean canSkipPrev, boolean isInSync){
         this.songName = name;
         this.artists = artists;
         this.trackUri = trackUri;
@@ -59,6 +66,8 @@ public class TrackMetadataBean {
         this.atharvTrack = atharvTrack;
         this.deviceId =  deviceId;
         this.imgUrl = imgUrl;
+        this.canSkipPrev = canSkipPrev;
+        this.isInSync = isInSync;
     }
     // --- Getters and Setters for all fields ---
     // These are also required by Jackson for populating the object's state.
@@ -107,6 +116,14 @@ public class TrackMetadataBean {
         return imgUrl;
     }
 
+    public boolean getCanSkipPrev(){
+        return canSkipPrev;
+    }
+
+    public boolean getIsInSync(){
+        return isInSync;
+    }
+
     // Setters
     public void setSongName(String name){
         this.songName = name;
@@ -152,6 +169,14 @@ public class TrackMetadataBean {
         this.imgUrl = url;
     }
 
+    public void setCanSkipPrev(boolean val){
+        this.canSkipPrev = val;
+    }
+
+    public void setIsInSync(boolean val){
+        this.isInSync = val;
+    }
+
     @Override
     public String toString() {
         return "TrackMetadataBeanClass{" +
@@ -166,6 +191,8 @@ public class TrackMetadataBean {
                ", atharv_track '" + atharvTrack + '\'' +
                ", device_id '" + deviceId + '\'' +
                ", img_url '" + imgUrl + '\'' +
+               ", can_skip_prev '" + canSkipPrev + '\'' +
+               ", is_in_sync '" + isInSync + '\'' +
                '}';
     }
 }

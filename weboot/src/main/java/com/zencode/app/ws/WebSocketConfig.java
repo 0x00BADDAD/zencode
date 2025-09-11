@@ -8,6 +8,7 @@ import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry
 import org.springframework.web.socket.WebSocketHandler;
 
 import com.zencode.app.ws.handlers.MyHandler;
+import com.zencode.app.ws.CustomHandshakeInterceptor;
 
 
 @Configuration

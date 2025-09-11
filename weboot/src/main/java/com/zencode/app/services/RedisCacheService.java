@@ -95,7 +95,8 @@ public class RedisCacheService {
             return "";
         }
         String deviceId = root.path("device").path("id").asText();
-        logger.debug("got the device id of user and it is: " + deviceId);
+        boolean activeStatus = root.path("device").path("is_active").asBoolean();
+        logger.debug("got the device id of user and it is: " + deviceId + " active status is: " + activeStatus);
         return deviceId;
     }
 
