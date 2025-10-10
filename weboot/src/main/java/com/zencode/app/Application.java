@@ -22,11 +22,14 @@ import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
 import org.springframework.scheduling.annotation.AsyncConfigurer;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.cache.annotation.EnableCaching;
-
+import org.springframework.kafka.annotation.EnableKafka;
+import org.springframework.kafka.annotation.EnableKafkaStreams;
 
 
 @SpringBootApplication
 @EnableAsync
+@EnableKafka
+@EnableKafkaStreams
 @EnableCaching
 public class Application implements WebMvcConfigurer, AsyncConfigurer{
 
