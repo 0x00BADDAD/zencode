@@ -6,7 +6,7 @@ const STATUS = {
   LockedIn: 2
 };
 
-export default function PlayerControls({disabled, currStatus, setCurrStatus, syncTrack, setKeepInSync, isInActive}){
+export default function PlayerControls({disabled, currStatus, setCurrStatus, syncTrack, lockTrack, lockOutTrack, setKeepInSync, isInActive}){
 
     const [isClickedSync, setIsClickedSync] = useState(false);
     const [isClickedLock, setIsClickedLock] = useState(false);
@@ -18,7 +18,8 @@ export default function PlayerControls({disabled, currStatus, setCurrStatus, syn
 
     const onMouseUp_SyncedOut_SyncIn_Handler = () => {
         setIsClickedSync(prev=>false);
-        (async ()=>{await syncTrack(); setCurrStatus(prev=>0);})();
+        (async ()=>{await syncTrack(); })();
+        setCurrStatus(prev=>0);
         document.removeEventListener("mouseup", onMouseUp_SyncedOut_SyncIn_Handler);
     }
 //----------------------------------------- SyncedOut----------------
@@ -30,7 +31,8 @@ export default function PlayerControls({disabled, currStatus, setCurrStatus, syn
     const onMouseUp_SyncedOut_LockIn_Handler = () => {
         setIsClickedLock(prev=>false);
         setKeepInSync(prev=>true);
-        (async ()=>{await syncTrack(); setCurrStatus(prev=>2);})();
+        (async ()=>{await lockTrack(); })();
+        setCurrStatus(prev=>2);
         document.removeEventListener("mouseup", onMouseUp_SyncedOut_LockIn_Handler);
     }
 
@@ -45,6 +47,7 @@ export default function PlayerControls({disabled, currStatus, setCurrStatus, syn
         setCurrStatus(prev=>2);
         setIsClickedLock(prev=>false);
         setKeepInSync(prev=>true);
+        (async ()=>{await lockTrack(); })();
         document.removeEventListener("mouseup", onMouseUp_SyncedIn_LockIn_Handler);
     }
 
@@ -58,6 +61,7 @@ export default function PlayerControls({disabled, currStatus, setCurrStatus, syn
         setCurrStatus(prev=>0);
         setIsClickedLock(prev=>false);
         setKeepInSync(prev=>false);
+        (async ()=>{await lockOutTrack(); })();
         document.removeEventListener("mouseup", onMouseUp_LockedIn_Lockout_Handler);
     }
 
@@ -69,14 +73,14 @@ export default function PlayerControls({disabled, currStatus, setCurrStatus, syn
                     <div className={!disabled ? "Syncin-btn" : "Syncin-btn-disabled"}
                          onMouseDown={()=>{if(!disabled){onMouseDown_SyncedOut_SyncIn_Handler();}}}
                          style={{
-                            transform: `scale(${isClickedSync ? 0.95 : 1})`
+                            transform: `scale(${isClickedSync ? 0.97 : 1})`
                          }}
                     ><div className="btn-text">Sync-In!</div></div>
 
                     <div className={!disabled ? "Lockin-btn" : "Lockin-btn-disabled"}
                         onMouseDown={()=>{if(!disabled){onMouseDown_SyncedOut_LockIn_Handler();}}}
                         style={{
-                            transform: `scale(${isClickedLock ? 0.95 : 1})`
+                            transform: `scale(${isClickedLock ? 0.97 : 1})`
                         }}
                     ><div className="btn-text">Lock-In!</div></div>
                 </div>
@@ -87,7 +91,7 @@ export default function PlayerControls({disabled, currStatus, setCurrStatus, syn
                     <div className={!disabled ? "Lockin-mid-btn" : "Lockin-mid-btn-disabled"}
                         onMouseDown={()=>{if(!disabled){onMouseDown_SyncedIn_LockIn_Handler();}}}
                         style={{
-                            transform: `scale(${isClickedLock ? 0.95 : 1})`
+                            transform: `scale(${isClickedLock ? 0.97 : 1})`
                         }}
                     ><div className="btn-text">Lock-In!</div>
                     </div>
@@ -99,7 +103,7 @@ export default function PlayerControls({disabled, currStatus, setCurrStatus, syn
                     <div className={!disabled ? "Lockout-btn" : "Lockout-btn-disabled"}
                         onMouseDown={()=>{if(!disabled){onMouseDown_LockedIn_Lockout_Handler();}}}
                         style={{
-                            transform: `scale(${isClickedLock ? 0.95 : 1})`
+                            transform: `scale(${isClickedLock ? 0.97 : 1})`
                         }}
                     >
                         <div className="btn-text-lockout">Lock-Out!</div>

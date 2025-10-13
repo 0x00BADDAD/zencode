@@ -37,6 +37,8 @@ import com.zencode.app.services.RedisCacheService;
 
 import org.springframework.web.bind.annotation.PathVariable;
 import com.zencode.app.shared.SharedTrackMetaDataHolder;
+import org.springframework.kafka.core.KafkaTemplate;
+import java.util.UUID;
 
 
 
@@ -52,6 +54,9 @@ public class SpotifyTasks {
     @Autowired
     private RedisCacheService redisCacheService;
 
+    @Autowired
+    private KafkaTemplate<String, TrackMetadataBean> KafkaTemplate;
+
 
 
     private static final Logger logger = LogManager.getLogger(SpotifyTasks.class);
@@ -61,8 +66,18 @@ public class SpotifyTasks {
     private MyHandler myHandler;
 
 
-    @Scheduled(fixedRate = 1500)
+    @Scheduled(fixedRate = 1200)
     public void fetchCurrSong(){
+
+            while(!myHandler.getFreshSessions().isEmpty()){
+                myHandler.getFreshSessions().forEach((key, value)-> {
+                    logger.debug("***************startingTask for sessionId: {}", value);
+                    myHandler.startTask(value);
+                    myHandler.getFreshSessions().remove(key);
+                });
+            }
+
+
             String accessToken = cacheService.getAccessToken("admin");
             RestClient restClient = RestClient.create();
            // TODO: proper error handling on all scheduled tasks
@@ -124,11 +139,17 @@ public class SpotifyTasks {
                 logger.debug("Bean from spotify is: " + trackMetadataBean.toString());
                 trackMetaDataHolder.setData(trackMetadataBean);
                 myHandler.broadcast(trackMetadataBean);
+                //UUID uniqueId = UUID.randomUUID();
+                //KafkaTemplate.send("spotify-track-topic", uniqueId.toString(), trackMetadataBean);
+
             }else{
                 logger.debug("No song playing right now!");
                 TrackMetadataBean emptyBean = new TrackMetadataBean("No music playing right now!", List.of(), "No-track", "No-resource", 0, 0, false, 0, true, "No-device-active", "No-img-url", false, false);
                 trackMetaDataHolder.setData(emptyBean);
                 myHandler.broadcast(emptyBean);
+                //UUID uniqueId = UUID.randomUUID();
+                //KafkaTemplate.send("spotify-track-topic", uniqueId.toString(), emptyBean);
+
             }
     }
 

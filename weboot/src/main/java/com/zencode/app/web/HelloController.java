@@ -50,7 +50,10 @@ import jakarta.servlet.http.Cookie;
 
 import com.zencode.app.ws.handlers.beans.TrackMetadataBean;
 import org.springframework.web.bind.annotation.PathVariable;
+
 import com.zencode.app.shared.SharedTrackMetaDataHolder;
+import com.zencode.app.shared.SharedRemoteMetaDataHolder;
+
 import com.zencode.app.services.RedisCacheService;
 import com.zencode.app.services.EligiCheckService;
 
@@ -63,6 +66,8 @@ import java.net.URI;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.http.HttpStatus;
 
+import com.zencode.app.sessions.UserSession;
+import com.zencode.app.ws.handlers.MyHandler;
 
 @Controller
 @SessionAttributes("csrfToken")
@@ -72,10 +77,16 @@ public class HelloController {
     private SharedTrackMetaDataHolder trackMetaDataHolder;
 
     @Autowired
+    private SharedRemoteMetaDataHolder remoteMetaDataHolder;
+
+    @Autowired
     private RedisCacheService cacheService;
 
     @Autowired
     private EligiCheckService checkService;
+
+    @Autowired
+    private MyHandler myHandler;
 
     private static final Logger logger = LogManager.getLogger(HelloController.class);
 
@@ -331,8 +342,94 @@ public class HelloController {
     }
 
 
-    @GetMapping("/api/play_track")
-    public ResponseEntity<Void> handlePlayTrack(@RequestParam("track_uri") String trackUri, @RequestParam("resource_uri") String resource_uri, @RequestParam("position") Integer position_ms, @RequestParam("session_id") String sessionId, @RequestParam("is_playing") boolean is_playing, @RequestParam("disc_number") Integer discNumber, @RequestParam("device_id") String deviceId){
+    @GetMapping("/api/lock_track")
+    public ResponseEntity<Void> handleLockTrack(@RequestParam("session_id") String sessionId){
+
+        UserSession userSession = myHandler.getUserSessions().get(sessionId);
+        if(userSession!=null){
+            logger.debug("Got a user session and now setting keepInSync to be true...");
+            userSession.setKeepInSync(true);
+            myHandler.getUserSessions().put(sessionId, userSession);
+        }
+
+        //String accessToken = cacheService.getAccessToken(sessionId);
+        //String authHeader = "Bearer " + accessToken;
+
+        //// map for json body
+        //Map<String, Object> bodyJson = new HashMap<>();
+        ////List<String> uris = List.of(trackUri);
+        //bodyJson.put("context_uri", resource_uri);
+        //bodyJson.put("offset", Map.ofEntries(Map.entry("uri", trackUri)));
+        //bodyJson.put("position_ms", position_ms);
+
+        //UriComponents uriComponents = UriComponentsBuilder
+        //        .fromUriString("https://api.spotify.com/v1/me/player/play")
+        //        .queryParam("device_id", "{device_id}")
+        //        .encode()
+        //        .build();
+
+        //URI uri_ = uriComponents.expand(deviceId).toUri();
+
+        //// now do the actual PUT request to the spotify API
+        //RestClient restClient = RestClient.create();
+
+        //restClient.put()
+        //    .uri(uri_)
+        //    .header("Authorization", authHeader)
+        //    .contentType(MediaType.APPLICATION_JSON)
+        //    .body(bodyJson)
+        //    .retrieve()
+        //    .toBodilessEntity();
+
+        //// in case is_playing is false we have to make another request to pause thetrack
+        //if(!is_playing){
+        //    restClient.put()
+        //        .uri("https://api.spotify.com/v1/me/player/pause")
+        //        .header("Authorization", authHeader)
+        //        .retrieve()
+        //        .toBodilessEntity();
+        //}
+
+        return ResponseEntity.ok()
+                .build(); // empty body response
+
+    }
+
+
+    @GetMapping("/api/lock_out_track")
+    public ResponseEntity<Void> handleLockOutTrack(@RequestParam("session_id") String sessionId){
+
+        UserSession userSession = myHandler.getUserSessions().get(sessionId);
+        if(userSession!=null){
+            logger.debug("Got a user session and now setting keepInSync to be true...");
+            userSession.setKeepInSync(false);
+            myHandler.getUserSessions().put(sessionId, userSession);
+        }
+
+        return ResponseEntity.ok()
+                .build(); // empty body response
+    }
+
+
+
+
+    @GetMapping("/api/sync_track")
+    public ResponseEntity<Void> handleSyncTrack(@RequestParam("session_id") String sessionId){
+
+        UserSession userSession = myHandler.getUserSessions().get(sessionId);
+        String deviceId = userSession.getRemoteDeviceId();
+        //if(userSession!=null){
+        //    logger.debug("Got a user session and now setting keepInSync to be true...");
+        //    userSession.setKeepInSync(true);
+        //    myHandler.getUserSessions().put(sessionId, userSession);
+        //}
+        TrackMetadataBean currTrackMetaData = trackMetaDataHolder.getData();
+        String resource_uri = currTrackMetaData.getResourceUri();
+        String trackUri = currTrackMetaData.getTrackUri();
+        Integer position_ms = currTrackMetaData.getProgressMs();
+
+        boolean is_playing = currTrackMetaData.getIsPlaying();
+
 
         String accessToken = cacheService.getAccessToken(sessionId);
         String authHeader = "Bearer " + accessToken;
@@ -371,16 +468,34 @@ public class HelloController {
                 .retrieve()
                 .toBodilessEntity();
         }
+        TrackMetadataBean remoteMetaData = remoteMetaDataHolder.getData();
+
+        boolean isInSync = (currTrackMetaData.getTrackUri().equals(remoteMetaData.getTrackUri()) && (Math.abs(currTrackMetaData.getProgressMs().intValue() - remoteMetaData.getProgressMs().intValue()) < 6000) && currTrackMetaData.getIsPlaying() == remoteMetaData.getIsPlaying());
+
+        while(!isInSync){
+            try{
+            Thread.sleep(500);
+            }catch(InterruptedException e){
+                System.err.println("InterruptedException while syncing tracks!");
+            }
+            remoteMetaData = remoteMetaDataHolder.getData();
+
+            isInSync = (currTrackMetaData.getTrackUri().equals(remoteMetaData.getTrackUri()) && (Math.abs(currTrackMetaData.getProgressMs().intValue() - remoteMetaData.getProgressMs().intValue()) < 6000) && currTrackMetaData.getIsPlaying() == remoteMetaData.getIsPlaying());
+
+        }
 
         return ResponseEntity.ok()
                 .build(); // empty body response
 
     }
 
+
+    //@JsonView(TrackMetadataBeanWeb.TrackMetadataJsonView.class)
     @GetMapping("/api/next_track")
-    @ResponseBody
-    @JsonView(TrackMetadataBeanWeb.TrackMetadataJsonView.class)
-    public TrackMetadataBeanWeb handleNextTrack(@RequestParam("session_id") String sessionId){
+    public ResponseEntity<Void> handleNextTrack(@RequestParam("session_id") String sessionId){
+        TrackMetadataBean currMetaData = remoteMetaDataHolder.getData();
+        String currTrackUri = currMetaData.getTrackUri();
+
         logger.debug("The sessionID received in request params is: " + sessionId);
         RestClient restClient = RestClient.create();
         String accessToken = cacheService.getAccessToken(sessionId);
@@ -403,65 +518,76 @@ public class HelloController {
                 logger.debug("A client error occurred: " + e.getStatusCode());
             }
             logger.debug("[HC] Something went wrong while doing next track returning empty bean!");
-            TrackMetadataBeanWeb emptyBean = new TrackMetadataBeanWeb("No music playing right now!", List.of(), "No-track", "No-resource", 0, 0, false, 0, true, "No-device-active", "No-img-url");
-            return emptyBean;
+            //TrackMetadataBeanWeb emptyBean = new TrackMetadataBeanWeb("No music playing right now!", List.of(), "No-track", "No-resource", 0, 0, false, 0, true, "No-device-active", "No-img-url");
+            //return emptyBean;
         }
 
-        JsonNode root = restClient.get()
-            .uri("https://api.spotify.com/v1/me/player/currently-playing")
-            .accept(MediaType.APPLICATION_JSON)
-            .header("Authorization", "Bearer " + accessToken)
-            .retrieve()
-            .body(JsonNode.class);
-
-
-        if (root != null){
-
-            String trackHref = root.path("item").path("href").asText();
-            String resourceUri = root.path("item").path("album").path("uri").asText();
-            String trackUri = root.path("item").path("uri").asText();
-            Integer discNumber = root.path("item").path("track_number").asInt();
-            Integer duration_ms = root.path("item").path("duration_ms").asInt();
-            Integer progress_ms = root.path("progress_ms").asInt();
-            boolean isPlaying = root.path("is_playing").asBoolean();
-            String deviceId = ""; // not needed
-            String songName = root.path("item").path("name").asText();
-
-            logger.debug("The song name after NEXT TRACK: " +songName);
-            String[] uriParts = trackUri.split(":");
-            logger.debug("[HelloController] The type of Spotify URI received is: " + uriParts[1]);
-
-
-           // String songName = root_.path("name").asText();
-            List<String> artistsAll = new ArrayList<>();
-
-           // JsonNode artists = root_.path("artists");
-            JsonNode artists = root.path("item").path("artists");
-
-            if (artists.isArray()){
-                for (JsonNode artist: artists){
-                    String artistName = artist.path("name").asText();
-                    artistsAll.add(artistName);
-                }
-            }
-
-            JsonNode images = root.path("item").path("album").path("images");
-            // we take the first image only
-            String imgUrl = images.get(0).path("url").asText();
-            logger.debug("[HC after next track]Got the album image url and it is: " + imgUrl);
-
-            TrackMetadataBeanWeb trackMetadataBean = new TrackMetadataBeanWeb(songName, artistsAll, trackUri, resourceUri, progress_ms, duration_ms, isPlaying, discNumber, true, deviceId, imgUrl);
-            return trackMetadataBean;
-            //logger.debug("Song Name: "+ songName + " Artists: "+ artistsAll.toString());
-            //logger.debug("[HC]Bean from spotify is: " + trackMetadataBean.toString());
-            //trackMetaDataHolder.setData(trackMetadataBean);
-            //myHandler.broadcast(trackMetadataBean);
+        while(currTrackUri.equals(remoteMetaDataHolder.getData().getTrackUri())){
+            //try{
+            //    Thread.sleep(500); // sleep for 1s
+            //}catch(InterruptedException e){
+            //    System.err.println("Next track API was interuppted while waiting for the track to change!");
+            //}
         }
 
+        return ResponseEntity.ok()
+                .build(); // empty body response
 
-        logger.debug("[HC] No song playing right now!");
-        TrackMetadataBeanWeb emptyBean = new TrackMetadataBeanWeb("No music playing right now!", List.of(), "No-track", "No-resource", 0, 0, false, 0, true, "No-device-active", "No-img-url");
-        return emptyBean;
+        //JsonNode root = restClient.get()
+        //    .uri("https://api.spotify.com/v1/me/player/currently-playing")
+        //    .accept(MediaType.APPLICATION_JSON)
+        //    .header("Authorization", "Bearer " + accessToken)
+        //    .retrieve()
+        //    .body(JsonNode.class);
+
+
+        //if (root != null){
+
+        //    String trackHref = root.path("item").path("href").asText();
+        //    String resourceUri = root.path("item").path("album").path("uri").asText();
+        //    String trackUri = root.path("item").path("uri").asText();
+        //    Integer discNumber = root.path("item").path("track_number").asInt();
+        //    Integer duration_ms = root.path("item").path("duration_ms").asInt();
+        //    Integer progress_ms = root.path("progress_ms").asInt();
+        //    boolean isPlaying = root.path("is_playing").asBoolean();
+        //    String deviceId = ""; // not needed
+        //    String songName = root.path("item").path("name").asText();
+
+        //    logger.debug("The song name after NEXT TRACK: " +songName);
+        //    String[] uriParts = trackUri.split(":");
+        //    logger.debug("[HelloController] The type of Spotify URI received is: " + uriParts[1]);
+
+
+        //   // String songName = root_.path("name").asText();
+        //    List<String> artistsAll = new ArrayList<>();
+
+        //   // JsonNode artists = root_.path("artists");
+        //    JsonNode artists = root.path("item").path("artists");
+
+        //    if (artists.isArray()){
+        //        for (JsonNode artist: artists){
+        //            String artistName = artist.path("name").asText();
+        //            artistsAll.add(artistName);
+        //        }
+        //    }
+
+        //    JsonNode images = root.path("item").path("album").path("images");
+        //    // we take the first image only
+        //    String imgUrl = images.get(0).path("url").asText();
+        //    logger.debug("[HC after next track]Got the album image url and it is: " + imgUrl);
+
+        //    TrackMetadataBeanWeb trackMetadataBean = new TrackMetadataBeanWeb(songName, artistsAll, trackUri, resourceUri, progress_ms, duration_ms, isPlaying, discNumber, true, deviceId, imgUrl);
+        //    return trackMetadataBean;
+        //    //logger.debug("Song Name: "+ songName + " Artists: "+ artistsAll.toString());
+        //    //logger.debug("[HC]Bean from spotify is: " + trackMetadataBean.toString());
+        //    //trackMetaDataHolder.setData(trackMetadataBean);
+        //    //myHandler.broadcast(trackMetadataBean);
+        //}
+
+
+        //logger.debug("[HC] No song playing right now!");
+        //TrackMetadataBeanWeb emptyBean = new TrackMetadataBeanWeb("No music playing right now!", List.of(), "No-track", "No-resource", 0, 0, false, 0, true, "No-device-active", "No-img-url");
+        //return emptyBean;
         //trackMetaDataHolder.setData(emptyBean);
         //myHandler.broadcast(emptyBean);
 
@@ -469,6 +595,9 @@ public class HelloController {
 
     @GetMapping("/api/prev_track")
     public ResponseEntity<Void> handlePrevTrack(@RequestParam("session_id") String sessionId){
+        TrackMetadataBean currMetaData = remoteMetaDataHolder.getData();
+        String currTrackUri = currMetaData.getTrackUri();
+
         logger.debug("The sessionID received in request params is: " + sessionId);
         RestClient restClient = RestClient.create();
         String accessToken = cacheService.getAccessToken(sessionId);
@@ -488,11 +617,19 @@ public class HelloController {
                 if (e.getStatusCode() == HttpStatus.FORBIDDEN) {
                     System.err.println("Access denied: 403 Forbidden. while prev track. perhaps at the start of album");
                 } else {
-                    System.err.println("A client error occurred: " + e.getStatusCode());
+                    System.err.println("A client error occurred while preving tracks: " + e.getStatusCode());
                 }
                 return ResponseEntity.ok()
                         .build();
             }
+
+        while(currTrackUri.equals(remoteMetaDataHolder.getData().getTrackUri())){
+            //try{
+            //    Thread.sleep(500); // sleep for 1s
+            //}catch(InterruptedException e){
+            //    System.err.println("Next track API was interuppted while waiting for the track to change!");
+            //}
+        }
 
         return ResponseEntity.ok()
                 .build();
@@ -564,11 +701,6 @@ public class HelloController {
     }
 
 
-
-    @GetMapping("/api/exp")
-    public String handleExpRequest(){
-        return "exp-html";
-    }
 
     @PostMapping("/api/token")
     @ResponseBody

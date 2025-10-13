@@ -9,12 +9,15 @@ import org.springframework.web.socket.CloseStatus;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.HashMap;
+import java.lang.Math;
 import java.util.concurrent.ConcurrentHashMap;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.zencode.app.shared.SharedTrackMetaDataHolder;
+import com.zencode.app.shared.SharedRemoteMetaDataHolder;
 import com.zencode.app.ws.handlers.beans.TrackMetadataBean;
 import com.zencode.app.ws.handlers.beans.EmailBean;
 
@@ -40,37 +43,54 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.net.URI;
 
 import com.zencode.app.services.RedisCacheService;
+import org.springframework.kafka.core.KafkaTemplate;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
+import com.zencode.app.services.SyncTracksService;
+
+import com.zencode.app.sessions.UserSession;
 
 public class MyHandler extends TextWebSocketHandler {
 
     @Autowired
     SyncService syncService;
 
-    //@Autowired
-    //DynamicTaskService dynamicTaskService;
-
-    //@Autowired
-    //FetchRemotePlaybackService fetchRemotePlaybackService;
-
     @Autowired
     private SharedTrackMetaDataHolder trackMetaDataHolder;
 
     @Autowired
-    private RedisCacheService cacheService;
+    private SharedRemoteMetaDataHolder remoteMetaDataHolder;
 
+    @Autowired
+    private RedisCacheService cacheService;
 
     @Autowired
     private ThreadPoolTaskScheduler scheduler;
+
+    @Autowired
+    private KafkaTemplate<String, TrackMetadataBean> KafkaTemplate;
+
+    @Autowired
+    private SyncTracksService syncTracksService;
 
     private final Map<String, ScheduledFuture<?>> activeTasks = new ConcurrentHashMap<>();
 
 
     private final Map<String, WebSocketSession> sessions = new ConcurrentHashMap<>();
+    private final Map<String, String> freshSessions = new ConcurrentHashMap<>();
+    private final Map<String, UserSession> userSessions = new ConcurrentHashMap<>();
     private final ObjectMapper objectMapper = new ObjectMapper();
     private static final Logger logger = LogManager.getLogger(MyHandler.class);
 
 
+    public Map<String, String> getFreshSessions(){
+        return this.freshSessions;
+    }
+
+    public Map<String, UserSession> getUserSessions(){
+        return this.userSessions;
+    }
 
     // Start a new repeating task with an ID
     public void startTask(String sessionId) {
@@ -78,10 +98,9 @@ public class MyHandler extends TextWebSocketHandler {
             System.out.println("Task " + sessionId + " already running.");
             return;
         }
-
         ScheduledFuture<?> future = scheduler.scheduleAtFixedRate(
                 () -> fetchRemotePlaybackTask(sessionId),
-                TimeUnit.SECONDS.toMillis(2) // run every 2s
+                1250 // run every 1s
         );
 
         activeTasks.put(sessionId, future);
@@ -101,7 +120,22 @@ public class MyHandler extends TextWebSocketHandler {
 
 
     public void fetchRemotePlaybackTask(String sessionId){
+
+            UserSession currUserSession = this.userSessions.get(sessionId);
+
+            if(currUserSession == null){
+                // don't do any fetch and just return
+                logger.debug("No song playing right now!");
+                TrackMetadataBean emptyBean = new TrackMetadataBean("No music playing right now!", List.of(), "No-track", "No-resource", 0, 0, false, 0, false, "No-device-active", "No-img-url", false, false);
+                //trackMetaDataHolder.setData(emptyBean);
+                // instead of sending the track updates to the web sockets, send it of the kafka topic
+                broadcast(emptyBean);
+                return;
+            }
+            boolean isKeepInSync = currUserSession.isKeepInSync();
+
             logger.debug("sessionId used for fetchRemotePlaybackTask is " + sessionId);
+            logger.debug("The keepInSync value associated with it is: {}", isKeepInSync);
             String accessToken = cacheService.getAccessToken(sessionId);
             RestClient restClient = RestClient.create();
 
@@ -158,7 +192,8 @@ public class MyHandler extends TextWebSocketHandler {
                 }
 
                 //String deviceId = root.path("device").path("id").asText();
-                String deviceId = cacheService.getDeviceId(sessionId);
+                //String deviceId = cacheService.getDeviceId(sessionId);
+                String deviceId = currUserSession.getRemoteDeviceId();
 
                 String name = root.path("device").path("name").asText();
                 String songName = root.path("item").path("name").asText();
@@ -185,33 +220,116 @@ public class MyHandler extends TextWebSocketHandler {
 
                 TrackMetadataBean currTrackMetaData = trackMetaDataHolder.getData();
 
-                boolean isInSync = (currTrackMetaData.getTrackUri().equals(trackUri) && (currTrackMetaData.getProgressMs().intValue() - progress_ms.intValue()) < 6000 && currTrackMetaData.getIsPlaying() == isPlaying);
+                boolean isInSync = (currTrackMetaData.getTrackUri().equals(trackUri) && (Math.abs(currTrackMetaData.getProgressMs().intValue() - progress_ms.intValue()) < 6000) && currTrackMetaData.getIsPlaying() == isPlaying);
+                boolean onlyPaused = ((currTrackMetaData.getTrackUri().equals(trackUri) && (Math.abs(currTrackMetaData.getProgressMs().intValue() - progress_ms.intValue()) < 6000) && currTrackMetaData.getIsPlaying() != isPlaying) && !currTrackMetaData.getIsPlaying());
 
+
+                //if(isKeepInSync && !isInSync){
+                //    songName = currTrackMetaData.getSongName();
+                //    artistsAll = currTrackMetaData.getArtists();
+                //    trackUri = currTrackMetaData.getTrackUri();
+                //    resourceUri = currTrackMetaData.getResourceUri();
+                //    progress_ms = currTrackMetaData.getProgressMs();
+                //    duration_ms = currTrackMetaData.getDurationMs();
+                //    isPlaying = currTrackMetaData.getIsPlaying();
+                //    discNumber = currTrackMetaData.getDiscNumber();
+                //    imgUrl = currTrackMetaData.getImgUrl();
+                //    canSkipPrev = false;
+                //}
                 TrackMetadataBean trackMetadataBean = new TrackMetadataBean(songName, artistsAll, trackUri, resourceUri, progress_ms, duration_ms, isPlaying, discNumber, false, deviceId, imgUrl, canSkipPrev, isInSync);
-                //logger.debug("Song Name: "+ songName + " Artists: "+ artistsAll.toString());
                 logger.debug("Bean from spotify is: " + trackMetadataBean.toString());
+                //logger.debug("Song Name: "+ songName + " Artists: "+ artistsAll.toString());
                 //trackMetaDataHolder.setData(trackMetadataBean);
+                //UUID uniqueId = UUID.randomUUID();
+                //KafkaTemplate.send("spotify-track-topic", uniqueId.toString(), trackMetadataBean);
+                remoteMetaDataHolder.setData(trackMetadataBean);
                 broadcast(trackMetadataBean);
+
+
+
+                if(isKeepInSync){
+                    if(!isInSync){
+                        if(onlyPaused){
+                            restClient.put()
+                                .uri("https://api.spotify.com/v1/me/player/pause")
+                                .header("Authorization", authHeader)
+                                .retrieve()
+                                .toBodilessEntity();
+                        }else{
+                            logger.debug("[[][][]] DISPATCHING SYNC SERVICE![][][][][][]");
+                            //CompletableFuture<String> fut = syncTracksService.syncTracks(sessionId, deviceId, currUserSession.isSyncing(), currTrackMetaData);
+
+                            String resource_uri_ = currTrackMetaData.getResourceUri();
+                            String trackUri_ = currTrackMetaData.getTrackUri();
+                            Integer position_ms_ = currTrackMetaData.getProgressMs();
+
+                            //String deviceId = cacheService.getDeviceId(sessionId);
+                            boolean is_playing_ = currTrackMetaData.getIsPlaying();
+
+                            // map for json body
+                            Map<String, Object> bodyJson = new HashMap<>();
+                            // List<String> uris = List.of(trackUri);
+                            bodyJson.put("context_uri", resource_uri_);
+                            bodyJson.put("offset", Map.ofEntries(Map.entry("uri", trackUri_)));
+                            bodyJson.put("position_ms", position_ms_);
+
+                            UriComponents uriComponents = UriComponentsBuilder
+                                    .fromUriString("https://api.spotify.com/v1/me/player/play")
+                                    .queryParam("device_id", "{device_id}")
+                                    .encode()
+                                    .build();
+
+                            URI uri_ = uriComponents.expand(deviceId).toUri();
+
+                            // now do the actual PUT request to the spotify API
+                            //RestClient restClient = RestClient.create();
+
+                            restClient.put()
+                                .uri(uri_)
+                                .header("Authorization", authHeader)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .body(bodyJson)
+                                .retrieve()
+                                .toBodilessEntity();
+
+                            // in case is_playing is false we have to make another request to pause thetrack
+                            if(!is_playing_){
+                                restClient.put()
+                                    .uri("https://api.spotify.com/v1/me/player/pause")
+                                    .header("Authorization", authHeader)
+                                    .retrieve()
+                                    .toBodilessEntity();
+                            }
+
+
+                        }
+                    }
+                }
             }else{
                 logger.debug("No song playing right now!");
                 TrackMetadataBean emptyBean = new TrackMetadataBean("No music playing right now!", List.of(), "No-track", "No-resource", 0, 0, false, 0, false, "No-device-active", "No-img-url", false, false);
                 //trackMetaDataHolder.setData(emptyBean);
+                // instead of sending the track updates to the web sockets, send it of the kafka topic
+                remoteMetaDataHolder.setData(emptyBean);
                 broadcast(emptyBean);
+                //UUID uniqueId = UUID.randomUUID();
+                //KafkaTemplate.send("spotify-track-topic", uniqueId.toString(), emptyBean);
             }
             // try to get the array of all available devices for the current user...
-            JsonNode root_ = restClient.get()
-                .uri("https://api.spotify.com/v1/me/player/devices")
-                .accept(MediaType.APPLICATION_JSON)
-                .header("Authorization", authHeader)
-                .retrieve()
-                .body(JsonNode.class);
-            JsonNode devices = root_.path("devices");
-            List<String> allDeviceIds = new ArrayList<>();
-            for(JsonNode device: devices){
-                String id = device.path("id").asText();
-                allDeviceIds.add(id);
-            }
-            logger.debug("The device ids are: " + allDeviceIds);
+
+            //JsonNode root_ = restClient.get()
+            //    .uri("https://api.spotify.com/v1/me/player/devices")
+            //    .accept(MediaType.APPLICATION_JSON)
+            //    .header("Authorization", authHeader)
+            //    .retrieve()
+            //    .body(JsonNode.class);
+            //JsonNode devices = root_.path("devices");
+            //List<String> allDeviceIds = new ArrayList<>();
+            //for(JsonNode device: devices){
+            //    String id = device.path("id").asText();
+            //    allDeviceIds.add(id);
+            //}
+            //logger.debug("The device ids are: " + allDeviceIds);
 
     }
 
@@ -229,10 +347,15 @@ public class MyHandler extends TextWebSocketHandler {
         );
         if(sessionId != null){
             logger.debug("conn setup for session_id: " + sessionId);
-            startTask(sessionId);
+            freshSessions.put(session.getId(), sessionId);
+            String deviceId = cacheService.getDeviceId(sessionId);
+            UserSession newSession = new UserSession(sessionId, false, true, deviceId, false);
+            userSessions.put(sessionId, newSession);
+            //startTask(sessionId);
         }
         sessions.put(session.getId(), safeSession);
     }
+
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
@@ -241,8 +364,9 @@ public class MyHandler extends TextWebSocketHandler {
         sessions.remove(session.getId());
         if(sessionId != null){
             stopTask(sessionId);
+            userSessions.remove(sessionId);
         }
-        logger.debug("Session removed: " + session.getId());
+        logger.debug("[][][][][][][]Session removed: " + session.getId());
     }
 
     @Override

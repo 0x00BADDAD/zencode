@@ -24,6 +24,9 @@ import org.apache.kafka.streams.state.ValueAndTimestamp;
 
 import com.zencode.app.kafka.DelayedForwardingProcessorSupplier;
 import com.zencode.app.ws.handlers.beans.TrackMetadataBean;
+import com.zencode.app.kafka.serdes.TrackMetadataBeanSerde;
+import java.util.List;
+
 
 @Configuration
 public class KafkaStreamsConfig {
@@ -31,26 +34,27 @@ public class KafkaStreamsConfig {
     private static final Logger logger = LogManager.getLogger(KafkaStreamsConfig.class);
 
     @Bean
-    public KStream<String, String> kafkaTopology(StreamsBuilder builder) {
+    public KStream<String, TrackMetadataBean> kafkaTopology(StreamsBuilder builder) {
 
-        StoreBuilder<TimestampedKeyValueStore<String, String>> storeBuilder =
+        TrackMetadataBeanSerde trackMetadataBeanSerde = new TrackMetadataBeanSerde();
+
+        StoreBuilder<TimestampedKeyValueStore<String, TrackMetadataBean>> storeBuilder =
                 Stores.timestampedKeyValueStoreBuilder(
-                        Stores.persistentTimestampedKeyValueStore("delay-spotify-track-store"),
-                        Serdes.String(),
-                        Serdes.String()
+                   Stores.persistentTimestampedKeyValueStore("delay-spotify-track-store"),
+                   Serdes.String(),
+                   trackMetadataBeanSerde
                 );
         builder.addStateStore(storeBuilder);
 
-        KStream<String, String> stream = builder.stream("spotify-track-topic",
-                       Consumed.with(Serdes.String(), Serdes.String()));
+        KStream<String, TrackMetadataBean> stream = builder.stream("spotify-track-topic",
+                       Consumed.with(Serdes.String(), trackMetadataBeanSerde));
 
-               stream.process(new DelayedForwardingProcessorSupplier(storeBuilder), storeBuilder.name())
-               .to("delay-spotify-track-topic",
-                       Produced.with(Serdes.String(), Serdes.String()));
+                       stream.process(new DelayedForwardingProcessorSupplier(storeBuilder), storeBuilder.name())
+                       .to("delay-spotify-track-topic",
+                       Produced.with(Serdes.String(), trackMetadataBeanSerde));
 
         return stream;
 
-        //return builder.build();
     }
 
 
@@ -71,17 +75,18 @@ public class KafkaStreamsConfig {
                 .build();
     }
 
-    @Bean
-    public ApplicationRunner runner(KafkaTemplate<String, String> template) {
-        return args -> {
-            template.send("spotify-track-topic", "some-track-id", "test-string-value");
-        };
-    }
+   // @Bean
+   // public ApplicationRunner runner(KafkaTemplate<String, TrackMetadataBean> template) {
+   //             TrackMetadataBean emptyBean = new TrackMetadataBean("No music playing right now!", List.of(), "No-track", "No-resource", 0, 0, false, 0, false, "No-device-active", "No-img-url", false, false);
+   //     return args -> {
+   //         template.send("spotify-track-topic", "some-track-id", emptyBean);
+   //     };
+   // }
 
 
     @KafkaListener(id = "my-group", topics = "delay-spotify-track-topic")
-    public void listen(String in) {
-        logger.debug("We got the delayed message from kafka topic --> {}", in);
+    public void listen(TrackMetadataBean in) {
+        logger.debug("We got the delayed bean from kafka topic --> {}", in);
     }
 }
 

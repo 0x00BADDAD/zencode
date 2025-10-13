@@ -1,6 +1,7 @@
 plugins {
     id("org.springframework.boot") version "3.2.5"
     id("io.spring.dependency-management") version "1.1.4"
+    id("io.freefair.lombok") version "9.0.0"
     //kotlin("jvm") version "1.9.0" // if using Kotlin, else remove
     java
 }
@@ -36,6 +37,14 @@ dependencies {
 
     implementation("org.springframework.kafka:spring-kafka")
     implementation("org.apache.kafka:kafka-streams")
+
+    //compileOnly("org.projectlombok:lombok:1.18.42")
+    //annotationProcessor("org.projectlombok:lombok:1.18.42")
+
+    //testCompileOnly("org.projectlombok:lombok:1.18.42")
+    //testAnnotationProcessor("org.projectlombok:lombok:1.18.42")
+
+    //annotationProcessor("org.projectlombok:lombok:1.18.42")
 }
 
 java {
