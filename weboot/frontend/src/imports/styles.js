@@ -4,3 +4,5 @@ import "../styles/loading.css";
 import "../styles/player.css";
 import "../styles/control.css";
 import "../styles/login.css";
+import "../styles/error.css";
+import "../styles/offline.css";

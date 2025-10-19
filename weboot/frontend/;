@@ -1,0 +1,82 @@
+import {useContext, useEffect, useState, useRef} from 'react';
+
+
+
+
+
+
+export default function OTPinput(){
+
+    const [editActive, setEditActive] = useState(false);
+    const editActiveRef = useRef(editActive);
+
+    useEffect(() => {
+      editActiveRef.current = editActive;
+    }, [editActive]);
+
+    const [activeIdx, setActiveIdx] = useState(-1);
+    const [d1, setD1] = useState(-1);
+    const [d2, setD2] = useState(-1);
+    const [d3, setD3] = useState(-1);
+    const [d4, setD4] = useState(-1);
+
+    useEffect(()=>{
+        const digitElements = document.querySelectorAll("div[class^='otp-digit-']");
+        for(const digitEle of digitElements){
+            digitEle.addEventListener("click", (e)=>{
+                e.preventDefault();
+                e.stopPropagation();
+                if(!editActiveRef.current){
+                    setEditActive(prev=>true);
+                }
+                console.log("FFFFFFFFired! click event in digitEle");
+            });
+        }
+
+        window.addEventListener("click", (e)=>{
+            e.preventDefault();
+            e.stopPropagation();
+            console.log("OOOOOOOOOout of the OTP input click");
+            if(editActiveRef.current){
+                setEditActive(prev=>false);
+            }
+        });
+
+        window.addEventListener("keydown", (e)=>{
+            e.preventDefault();
+            const keyName = e.key;
+            const meta = e.metaKey;
+            const shift = e.shiftKey;
+            if(editActiveRef.current){
+                
+            }
+        })
+
+    }, []);
+
+    return (<form className="otp-form" action="" method="post">
+        <div className="otp-digit-1"><input type="number" min="0" max="9" className={editActive ? "custom-input-active" : "custom-input"}
+            style={{
+                transition: "border 0.1s cubic-bezier(0, 0.95, 0.13, 1.83)"
+            }}
+        /> </div>
+                <div className="otp-digit-2"><input type="number" min="0" max="9" className={editActive ? "custom-input-active" : "custom-input"}
+            style={{
+                transition: "border 0.1s cubic-bezier(0, 0.95, 0.13, 1.83)"
+            }}
+
+        /> </div>
+                <div className="otp-digit-3"><input type="number" min="0" max="9" className={editActive ? "custom-input-active" : "custom-input"}
+            style={{
+                transition: "border 0.1s cubic-bezier(0, 0.95, 0.13, 1.83)"
+            }}
+        /> </div>
+                <div className="otp-digit-4"><input type="number" min="0" max="9" className={editActive ? "custom-input-active" : "custom-input"}
+            style={{
+                transition: "border 0.1s cubic-bezier(0, 0.95, 0.13, 1.83)"
+            }}
+
+        /> </div>
+           </form>);
+}
+

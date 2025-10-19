@@ -109,3 +109,58 @@
 .loading-artist-name {
   animation-delay: 0.2s;
 }
+
+.loading-error-banner-player{
+    position: absolute;
+    top: 44%;
+    left: 31.14%;
+    width: 33.06%;
+    height: 5%;
+    background-color: #F22222;
+    border-radius: 10px 10px 0px 0px;
+
+}
+
+.loading-error-banner-player{
+  /* Set the background gradient */
+  background-image: linear-gradient(
+    to right,
+    #F22222 0%,
+    #FDF5F5 20%,
+    #F22222 30%,
+    #F22222 100%
+  );
+  background-repeat: no-repeat;
+  background-size: 800px 140px;
+
+  /* Apply the animation */
+  animation: shimmer 1s linear infinite;
+}
+
+.loading-error-banner-track{
+    position: absolute;
+    top: 7.09%;
+    left: 31.14%;
+    width: 33.06%;
+    height: 5%;
+    background-color: #F22222;
+    border-radius: 10px 10px 0px 0px;
+
+}
+
+.loading-error-banner-track{
+  /* Set the background gradient */
+  background-image: linear-gradient(
+    to right,
+    #F22222 0%,
+    #FDF5F5 20%,
+    #F22222 30%,
+    #F22222 100%
+  );
+  background-repeat: no-repeat;
+  background-size: 800px 140px;
+
+  /* Apply the animation */
+  animation: shimmer 1s linear infinite;
+}
+

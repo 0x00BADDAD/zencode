@@ -8,6 +8,7 @@
       height: 25.85%;
       background-color: #D9D9D9;
       border-radius: 10px;
+      z-index:0;
 }
 /* W: 1728 H: 1117*/
 :root {
@@ -89,14 +90,14 @@ img {
 .timeline-pointer{
     position: absolute;
     top: 50%;
-    transform: translateY(-50%);
+    /*transform: translateY(-50%);*/
     left: 47%;
     height: 90%;
     aspect-ratio: 1;
     background-color: white;
     border: 2px solid black;
     border-radius: 10px;
-    transition: transform 0.1s ease;
+    transition: transform 0.2s ease;
 }
 
 .timeline-pointer:hover{

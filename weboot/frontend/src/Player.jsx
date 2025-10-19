@@ -32,6 +32,7 @@ export default function Player({
     //setTimeout(()=>{setShowLoadingBanner(prev => false);}, 2000);
     const ifCurrStatusIsLockedIn = !!(currStatus === 2);
     console.log(`---->value of song name: ${metaData.name}`);
+    const perCent = ((metaData.progress_ms || 0) / metaData.duration_ms) * 100;
     return (rendering || !!(metaData.loadingNext)) ? (<LoadingBanner track={false}/>) : (
         <div className="player-track">
             {loadingCoverPic ? (<div className="loading-cover-pic"></div>) :
@@ -41,7 +42,7 @@ export default function Player({
                 <ScrollingBanner songName={metaData.name}/>
                 <div className="artist-name">{metaData.artists.reduce((acc, currArtist)=>{ if(acc){ return acc + ", " + currArtist;}else{ return currArtist}}, "")}</div>
             </div>
-            {!isInActive && <DevicePane deviceIds={deviceIds} activeDeviceId={activeDeviceId} transferNew={transferNewPlayback} transferOld={transferOldPlayback}/>}
+            {/*!isInActive && <DevicePane deviceIds={deviceIds} activeDeviceId={activeDeviceId} transferNew={transferNewPlayback} transferOld={transferOldPlayback}/>*/}
             <PlayButton disable={ifCurrStatusIsLockedIn || isInActive} pauseHandler={pauseTrackHandleOldAndNew} resumeHandler={resumeTrackHandleOldAndNew} is_playing={metaData.is_playing} isInActive={isInActive}/>
 
 
@@ -80,8 +81,7 @@ export default function Player({
             </div>
 
 
-
-            <Slider elapsedTime={metaData.progress_ms} totalTime={metaData.duration_ms} isTrack={ifCurrStatusIsLockedIn || isInActive} seekTrack={seekTrack} isInActive={isInActive}/>
+            <Slider perCent={Math.ceil(perCent)} isTrack={ifCurrStatusIsLockedIn || isInActive} seekTrack={seekTrack} isInActive={isInActive}/>
             { /*<div className="timeline"></div>*/}
         </div>
     );

@@ -50,11 +50,16 @@ public class TrackMetadataBean {
     @JsonProperty("is_in_sync")
     private boolean isInSync;
 
+    @JsonProperty("err_found")
+    private boolean errFound;
+
+    @JsonProperty("err_found_stack_trace")
+    private String errFoundStackTrace;
 
     public TrackMetadataBean() {
     }
 
-    public TrackMetadataBean(String name, List<String> artists, String trackUri, String resourceUri, Integer progress_ms, Integer duration_ms, boolean isPlaying, Integer discNumber, boolean atharvTrack, String deviceId, String imgUrl, boolean canSkipPrev, boolean isInSync){
+    public TrackMetadataBean(String name, List<String> artists, String trackUri, String resourceUri, Integer progress_ms, Integer duration_ms, boolean isPlaying, Integer discNumber, boolean atharvTrack, String deviceId, String imgUrl, boolean canSkipPrev, boolean isInSync, boolean errFound, String errFoundStackTrace){
         this.songName = name;
         this.artists = artists;
         this.trackUri = trackUri;
@@ -68,6 +73,8 @@ public class TrackMetadataBean {
         this.imgUrl = imgUrl;
         this.canSkipPrev = canSkipPrev;
         this.isInSync = isInSync;
+        this.errFound = errFound;
+        this.errFoundStackTrace = errFoundStackTrace;
     }
     // --- Getters and Setters for all fields ---
     // These are also required by Jackson for populating the object's state.
@@ -124,6 +131,14 @@ public class TrackMetadataBean {
         return isInSync;
     }
 
+    public boolean getErrFound(){
+        return errFound;
+    }
+
+    public String getErrFoundStackTrace(){
+        return errFoundStackTrace;
+    }
+
     // Setters
     public void setSongName(String name){
         this.songName = name;
@@ -177,6 +192,14 @@ public class TrackMetadataBean {
         this.isInSync = val;
     }
 
+    public void setErrFound(boolean val){
+        this.errFound = val;
+    }
+
+    public void setErrFoundStackTrace(String val){
+        this.errFoundStackTrace = val;
+    }
+
     @Override
     public String toString() {
         return "TrackMetadataBeanClass{" +
@@ -188,11 +211,13 @@ public class TrackMetadataBean {
                ", duration_ms: '" + durationMs + '\'' +
                ", isPlaying: '" + isPlaying + '\'' +
                ", disc_number: '" + discNumber + '\'' +
-               ", atharv_track '" + atharvTrack + '\'' +
-               ", device_id '" + deviceId + '\'' +
+               ", atharv_track: '" + atharvTrack + '\'' +
+               ", device_id: '" + deviceId + '\'' +
                ", img_url '" + imgUrl + '\'' +
                ", can_skip_prev '" + canSkipPrev + '\'' +
                ", is_in_sync '" + isInSync + '\'' +
+               ", err_found '" + errFound + '\'' +
+               ", err_found_stack_trace '" + errFoundStackTrace + '\'' +
                '}';
     }
 }

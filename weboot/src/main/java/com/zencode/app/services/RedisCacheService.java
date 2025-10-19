@@ -54,6 +54,11 @@ public class RedisCacheService {
             myCache1.put(sessionId, token);
     }
 
+    public void setApprovalStatus(String mailId, String status){
+        Cache myCache1 = cacheManager.getCache("approvalStatus");
+        myCache1.put(mailId, status);
+    }
+
 
     public void setSessionId(String sessionId){
         Cache sessionCache = cacheManager.getCache("sessions");
@@ -65,7 +70,6 @@ public class RedisCacheService {
         Cache sessionCache = cacheManager.getCache("sessions");
         String val = sessionCache.get(sessionId, String.class);
         return val != null;
-
     }
 
     @Cacheable(value = "refTok", key = "#a0")
@@ -134,6 +138,11 @@ public class RedisCacheService {
             return resp.getAccessToken();
 
 
+    }
+
+    @Cacheable(value = "approvalStatus", key = "#a0")
+    public String getApprovalStatus(String mailId){
+        return "not"; // only for the first time this is called afterwards
     }
 
 }

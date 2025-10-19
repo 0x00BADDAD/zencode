@@ -1,0 +1,54 @@
+
+.offline-banner{
+    position: absolute;
+    top: 0%;
+    height: 8.72%;
+    width: 100%;
+    background-color: #5774D7;
+}
+
+.offline-banner-text{
+    position: absolute;
+    top: 25%;
+    left: 40%;
+    color: #FFFFFF;
+    font-family: 'IBM', monospace;
+}
+
+@keyframes fadeout {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.online-banner{
+    position: absolute;
+    top: 0%;
+    height: 8.72%;
+    width: 100%;
+    background-color: #2CC93F;
+    z-index: 1;
+    animation: fadeout 1s ease 4s 1 forwards;
+}
+
+.online-banner-text{
+    position: absolute;
+    top: 25%;
+    left: 40%;
+    color: #FFFFFF;
+    font-family: 'IBM', monospace;
+    z-index: 1;
+}
+
+
+@font-face {
+  font-family: 'IBM';
+  src: url('../static/fonts/IBMPlexMono-SemiBold.ttf') format('truetype');
+}
+
+
+
+

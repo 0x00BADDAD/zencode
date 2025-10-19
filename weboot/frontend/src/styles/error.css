@@ -1,0 +1,35 @@
+.error-banner-player{
+    position: absolute;
+    top: 44%;
+    left: 31.14%;
+    width: 33.06%;
+    height: 5%;
+    background-color: #F22222;
+    border-radius: 10px 10px 0px 0px;
+    cursor: pointer;
+}
+
+.error-banner-track{
+    position: relative;
+    top: 7.09%;
+    left: 31.14%;
+    width: 33.06%;
+    height: 5%;
+    background-color: #F22222;
+    border-radius: 10px 10px 0px 0px;
+    cursor: pointer;
+    z-index: 0;
+}
+
+
+@font-face {
+  font-family: 'IBM';
+  src: url('../static/fonts/IBMPlexMono-SemiBold.ttf') format('truetype');
+}
+
+.error-banner-text{
+    position: absolute;
+    font-family: 'IBM', monospace;
+    left: 4%;
+    top: 6%;
+}

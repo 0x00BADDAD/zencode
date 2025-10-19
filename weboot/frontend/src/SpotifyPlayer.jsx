@@ -4,8 +4,13 @@ import {WsRefContext} from './Contexts/WsRefContext.jsx';
 import {DisableWebSocketContext} from './Contexts/DisableWebSocketContext.jsx';
 import {DisableWebSocketDispatchContext} from './Contexts/DisableWebSocketContext.jsx';
 import Player from './Player.jsx';
+import RebootButton from './RebootButton.jsx';
+import ErrorBanner from './ErrorBanner.jsx';
+import EmailInput from './EmailInput.jsx';
+import OTPinput from './OTPinput.jsx';
 import LoggedoutBanner from './LoggedoutBanner.jsx';
 import PlayerControls from './PlayerControls.jsx';
+import {stages} from './stages.jsx';
 
 async function fetchAccessToken(sessionId){
         const params = new URLSearchParams();
@@ -17,15 +22,6 @@ async function fetchAccessToken(sessionId){
         return token.access_token;
 }
 
-    //function waitForOpen(ws) {
-    //    return new Promise((resolve) => {
-    //        if (ws.readyState === WebSocket.OPEN) {
-    //            resolve();
-    //        } else {
-    //            ws.addEventListener("open", () => resolve());
-    //        }
-    //    });
-    //}
 
 // SpotifyPlayer needs to depend upon reactive value of context_uri which will be fed from SpotifyTrack ws
 // endpoint and do a PUT request to the spotify api every time the context_uri is changed
@@ -58,8 +54,13 @@ export default function SpotifyPLayer(){
 
     const [newPlaybackActive, setNewPlaybackActive] = useState(false);
     const [currDeviceId, setCurrDeviceId] = useState(null);
+
+    const [currErrMsgToSend, setCurrErrMsgToSend] = useState("initial err message");
+    const [errContentToSend, setErrContentToSend] = useState({API_NAME: "/api/some_api", stacktrace: "some huge JVM trace"});
     //const [playbackTransferred, setPlaybackTransferred] = useState(false);
 
+    const [currStage, setCurrStage] = useState(initialStage);
+    const [prevStage, setPrevStage] = useState(null);
 
     const initialMetaData = {
        track_uri: "No uri",
@@ -72,63 +73,8 @@ export default function SpotifyPLayer(){
     };
 
     const [metaData, setMetaData] = useState(initialMetaData);
-    //const [metaDataFinal, setMetaDataFinal] = useState(initialMetaData);
-
-  // const [changeInTrackUriFromBackend, setChangeInTrackUriFromBackend] = useState(false);
-
-    //const [playerUri, setPlayerUri] = useState(currTrackMetaData.track_uri);
-    // const [playerUri, setPlayerUri] = useState('');
-
-    function syncTrack2(){
-        if(!wsRef){console.error("wsRef uninitialized... something went wrong"); return;}
-
-        const msg = {
-            email: userEmail,
-        };
-        setSyncing(true);
-        wsRef.send(JSON.stringify(msg));
-        setSyncing(false);
-    }
 
 
-
-    async function transferPlayback(device_id){
-        setTransferringPlayback(true);
-            console.log('transferring playback to Device ID ', device_id); //  this is what you use
-            // transferring playback
-            const params = new URLSearchParams();
-            params.append("device_id", device_id);
-            const resp = await fetch(`http://127.0.0.1:3000/api/transfer_playback?${params.toString()}`);
-            if(!resp.ok){
-                throw new Error("Something went wrong when transferring playback...");
-            }
-            const resp_ = await resp.json();
-            setTransferringPlayback(false);
-            console.log(`Transferred playback! response: ${resp_}`);
-    }
-
-
-
-    async function syncTrack_(track_uri, resource_uri, position_ms, is_playing, disc_number){
-        const params = new URLSearchParams();
-        params.append('track_uri', track_uri);
-        params.append('position', position_ms);
-        params.append('session_id', sessionId); // this is a global defined in thymeleaf "hello-world" templates...
-        params.append('is_playing', is_playing);
-        params.append('disc_number', disc_number);
-        params.append('resource_uri', resource_uri);
-        setSyncing(true);
-        const resp = await fetch(`http://127.0.0.1:3000/api/play_track?${params.toString()}`);
-        // only after the above fetch has been done
-        if (!resp.ok){
-            throw new Error("first fetch to play a new track failed!");
-        }
-        setSyncing(false);
-
-        // TODO: check if these setStates are batched or not?
-
-        //setMetaData(prev => currTrackMetaData);
-    }
 
     async function syncTrack(){
 
@@ -142,14 +88,23 @@ export default function SpotifyPLayer(){
         const resp = await fetch(`http://127.0.0.1:3000/api/sync_track?${params.toString()}`);
         // only after the above fetch has been done
         if (!resp.ok){
-            throw new Error("first fetch to play a new track failed!");
+            //throw new Error("first fetch to play a new track failed!");
+            const errContent = await resp.json();
+            const errMsgToSend = `ERR in syncTrack() in SpotifyPlayer.jsx [150]: res status: ${resp.status}:${resp.statusText}`;
+            setCurrErrMsgToSend(prev=>errMsgToSend);
+            setErrContentToSend(prev=>errContent);
+
+            if(currStage !== stages.ERR){
+                setPrevStage(prev=>currStage);
+                setCurrStage(prev=>stages.ERR);
+            }
+            //setHideError(prev=>false);
         }
         setSyncing(false);
 
-        // TODO: check if these setStates are batched or not?
-
-        //setMetaData(prev => currTrackMetaData);
     }
+
+
 
     async function lockTrack(){
 
@@ -162,13 +117,18 @@ export default function SpotifyPLayer(){
         const resp = await fetch(`http://127.0.0.1:3000/api/lock_track?${params.toString()}`);
         // only after the above fetch has been done
         if (!resp.ok){
-            throw new Error("first fetch to play a new track failed!");
+            //throw new Error("first fetch to play a new track failed!");
+            const errContent = await resp.json();
+            const errMsgToSend = `ERR in lockTrack() in SpotifyPlayer.jsx [168]: res status: ${resp.status}:${resp.statusText}`;
+            setCurrErrMsgToSend(prev=>errMsgToSend);
+            setErrContentToSend(prev=>errContent);
+
+            if(currStage !== stages.ERR){
+                setPrevStage(prev=>currStage);
+                setCurrStage(prev=>stages.ERR);
+            }
+            //setHideError(prev=>false);
         }
-        //setSyncing(false);
-
-        // TODO: check if these setStates are batched or not?
-
-        //setMetaData(prev => currTrackMetaData);
     }
 
     const [lockingOut, setLockingOut] = useState(false);
@@ -180,7 +140,17 @@ export default function SpotifyPLayer(){
         const resp = await fetch(`http://127.0.0.1:3000/api/lock_out_track?${params.toString()}`);
         // only after the above fetch has been done
         if (!resp.ok){
-            throw new Error("first fetch to play a new track failed!");
+            //throw new Error("first fetch to play a new track failed!");
+            const errContent = await resp.json();
+            const errMsgToSend = `ERR in lockOutTrack() in SpotifyPlayer.jsx [174]: res status: ${resp.status}:${resp.statusText}`;
+            setCurrErrMsgToSend(prev=>errMsgToSend);
+            setErrContentToSend(prev=>errContent);
+
+            if(currStage !== stages.ERR){
+                setPrevStage(prev=>currStage);
+                setCurrStage(prev=>stages.ERR);
+            }
+            //setHideError(prev=>false);
         }
         setLockingOut(prev=>false);
     }
@@ -199,7 +169,17 @@ export default function SpotifyPLayer(){
         // TODO: something to return from this request
         const resp = await fetch(`http://127.0.0.1:3000/api/next_track?${params.toString()}`);
         if(!resp.ok){
-            throw new Error("fetch to play the next track didn't work");
+            //throw new Error("fetch to play the next track didn't work");
+            const errContent = await resp.json();
+            const errMsgToSend = `ERR in lockTrack() in SpotifyPlayer.jsx [196]: res status: ${resp.status}:${resp.statusText}`;
+            setCurrErrMsgToSend(prev=>errMsgToSend);
+            setErrContentToSend(prev=>errContent);
+
+            if(currStage !== stages.ERR){
+                setPrevStage(prev=>currStage);
+                setCurrStage(prev=>stages.ERR);
+            }
+            //setHideError(prev=>false);
         }
         setLoadingNextTrack(prev=>false);
     }
@@ -218,7 +198,18 @@ export default function SpotifyPLayer(){
         // TODO: something to return from this request
         const resp = await fetch(`http://127.0.0.1:3000/api/prev_track?${params.toString()}`);
         if(!resp.ok){
-            throw new Error("fetch to play the prev track didn't work");
+            //throw new Error("fetch to play the prev track didn't work");
+            const errContent = await resp.json();
+            const errMsgToSend = `ERR in lockTrack() in SpotifyPlayer.jsx [218]: res status: ${resp.status}:${resp.statusText}`;
+            setCurrErrMsgToSend(prev=>errMsgToSend);
+            setErrContentToSend(prev=>errContent);
+
+            if(currStage !== stages.ERR){
+                setPrevStage(prev=>currStage);
+                setCurrStage(prev=>stages.ERR);
+            }
+
+            //setHideError(prev=>false);
         }
         setLoadingPrevTrack(prev=>false);
     }
@@ -229,9 +220,22 @@ export default function SpotifyPLayer(){
         params.append('session_id', sessionId);
         const resp = await fetch(`http://127.0.0.1:3000/api/pause_track?${params.toString()}`);
         if(!resp.ok){
-            throw new Error("fetch to puase the track didn't work");
+            //throw new Error("fetch to puase the track didn't work");
+            const errContent = await resp.json();
+            const errMsgToSend = `ERR in lockTrack() in SpotifyPlayer.jsx [232]: res status: ${resp.status}:${resp.statusText}`;
+            setCurrErrMsgToSend(prev=>errMsgToSend);
+            setErrContentToSend(prev=>errContent);
+
+            if(currStage !== stages.ERR){
+                setPrevStage(prev=>currStage);
+                setCurrStage(prev=>stages.ERR);
+            }
+
+            //setHideError(prev=>false);
         }
     }
+
+
 
     async function resumeTrack(){
         const params = new URLSearchParams();
@@ -239,10 +243,27 @@ export default function SpotifyPLayer(){
         params.append('device_id', oldPlaybackId.current);
         const resp = await fetch(`http://127.0.0.1:3000/api/resume_track?${params.toString()}`);
         if(!resp.ok){
-            throw new Error("fetch to resume the track didn'tm work");
+            //throw new Error("fetch to resume the track didn'tm work");
+            const errContent = await resp.json();
+            const errMsgToSend = `ERR in lockTrack() in SpotifyPlayer.jsx [245]: res status: ${resp.status}:${resp.statusText}`;
+            setCurrErrMsgToSend(prev=>errMsgToSend);
+            setErrContentToSend(prev=>errContent);
+
+            if(currStage !== stages.ERR){
+                setPrevStage(prev=>currStage);
+                setCurrStage(prev=>stages.ERR);
+            }
+
+            //setHideError(prev=>false);
         }
     }
+
+
+
+
     const [seeking, setSeeking] = useState(false);
+
+
     async function seekTrack(seekMs){
         if(newPlaybackActive){
             playerRef.seek(seekMs).then(() => {
@@ -256,7 +277,17 @@ export default function SpotifyPLayer(){
         params.append('seek_ms', seekMs);
         const resp = await fetch(`http://127.0.0.1:3000/api/seek_track?${params.toString()}`);
         if(!resp.ok){
-            throw new Error("fetch to resume the track didn't work");
+            //throw new Error("fetch to resume the track didn't work");
+            const errContent = await resp.json();
+            const errMsgToSend = `ERR in lockTrack() in SpotifyPlayer.jsx [265]: res status: ${resp.status}:${resp.statusText}`;
+            setCurrErrMsgToSend(prev=>errMsgToSend);
+            setErrContentToSend(prev=>errContent);
+            if(currStage != stages.ERR){
+                setPrevStage(prev=>currStage);
+                setCurrStage(prev=>stages.ERR);
+            }
+
+            //setHideError(prev=>false);
         }
         setSeeking(prev=>false);
     }
@@ -282,110 +313,26 @@ export default function SpotifyPLayer(){
             }
     }
 
-    async function getDuration(trackId){
-        const params = new URLSearchParams();
-        params.append('track_id', trackId);
-        params.append('session_id', sessionId);
-        const resp = await fetch(`http://127.0.0.1:3000/api/tracks?${params.toString()}`);
-        if(!resp.ok){
-            throw new Error("Something went wrong when getting duration of song for SDK!");
+    const [hidePlayerControls, setHidePlayerControls] = useState(false);
+
+    useEffect(()=>{
+        if(!!currTrackMetaData.err_found){
+            //const errContent = {
+            //    API_NAME: "SpotifyTasks scheduled in currTrackMetaData fetch error in backend",
+            //    stacktrace: currTrackMetaData.err_found_stack_trace
+            //};
+
+            //const errMsgToSend = `ERR in SpotifyTasks fetch backend!`;
+            //setCurrErrMsgToSend(prev=>errMsgToSend);
+            //setErrContentToSend(prev=>errContent);
+            //setHideError(prev=>false);
+            setHidePlayerControls(prev=>true);
+        }else{
+            setHidePlayerControls(prev=>false);
         }
-        const resp_ = await resp.json();
-        return resp_.duration_ms;
-    }
+    }, [currTrackMetaData]);
 
 
-
-    //useEffect(() =>{
-    //    const ws =  new WebSocket("ws://127.0.0.1:3000/ws1");
-    //    await waitForOpen(ws);
-    //    // I want to send the message to the backend every time I want to sync tracks
-    //    setWsRef(prev => ws);
-    //}, []);
-
-    useEffect(() => {
-            window.onSpotifyWebPlaybackSDKReady = () => {
-                if (!userGrantedPermission) {
-                      console.warn("User did not grant permission. Skipping player init.");
-                      return;
-                }
-              const token = accessToken;
-
-              const oAuthRefresh = async (cb) => {
-                      const freshToken = await fetchAccessToken(sessionId);
-                      cb(freshToken);
-              };
-
-            const player = new Spotify.Player({
-                name: 'Sync with Atharv -- Playback',
-                getOAuthToken: oAuthRefresh,
-                volume: 0.8
-            });
-
-              // Ready
-              //const readyCb = async ({device_id}) => {
-              //      console.log('Ready with Device ID', device_id); //  this is what you use
-              //      // transferring playback
-              //      const resp = await fetch('http://127.0.0.1:3000/api/transfer_playback', {
-              //      method: 'POST',
-              //      body: JSON.stringify({ device_ids: [device_id], play: true }),
-              //      headers: {
-              //        'Content-Type': 'application/json',
-              //        'X-Token': `${token}`
-              //        },
-              //      });
-              //      const resp_ = await resp.json();
-              //      console.log(`Transferred playback! response: ${resp_}`);
-              //};
-                const readyCb2 = ({device_id}) => {
-                    newPlaybackId.current = device_id;
-                    console.log(`New playback for this device has been setup with id: ${device_id}`);
-                };
-
-                player.addListener('ready', readyCb2);
-                // Not Ready
-                player.addListener('not_ready', ({ device_id }) => {
-                    console.log('Device ID has gone offline', device_id);
-                });
-
-                player.addListener('initialization_error', ({ message }) => {
-                    console.error(message);
-                });
-
-                player.addListener('authentication_error', ({ message }) => {
-                    console.error(message);
-                });
-
-                player.addListener('account_error', ({ message }) => {
-                    console.error(message);
-                });
-
-
-                player.connect().then(success => {
-                    if (!success){
-                        console.error("player didn't really connect... something went wrong!");
-                        return;
-                    }else{
-                        console.log(`Player connected!! let's gooo!`);
-                    }
-                    setPlayerRef(prev => player);
-                });
-            }
-
-            // load the external spotify script after defining the SDK callback as done above
-            const script = document.createElement('script');
-            script.src = 'https://sdk.scdn.co/spotify-player.js';
-            script.async = true;
-            script.onload = () => {
-              console.log('Script loaded successfully!');
-            };
-            script.onerror = (error) => {
-              console.error('Error loading script:', error);
-            };
-            document.body.appendChild(script); // this starts downloading the script
-
-
-    }, []);
 
     const [triggerLoadingNextTrack, setTriggerLoadingNextTrack] = useState(false);
 
@@ -393,7 +340,7 @@ export default function SpotifyPLayer(){
     useEffect(()=>{
         let ws = null;
         if(!disableWebSocket){
-             // Connect to WebSocket server
+                //Connect to WebSocket server
                 ws = new WebSocket(`ws://127.0.0.1:3000/ws1?session_id=${sessionId}`);
                 //setSocket(ws);
                 //When message is received
@@ -401,15 +348,31 @@ export default function SpotifyPLayer(){
                   try {
                     const data = JSON.parse(event.data); // if message is JSON
                     console.log(`data recd in player socket is: ${data}`);
-                    const {name, track_uri, resource_uri, artists , progress_ms, duration_ms, is_playing, disc_number, atharv_track, device_id, img_url, can_skip_prev, is_in_sync}= data;
+                    const {name, track_uri, resource_uri, artists , progress_ms, duration_ms, is_playing, disc_number, atharv_track, device_id, img_url, can_skip_prev, is_in_sync, err_found, err_found_stack_trace} = data;
+
+                    if(!atharv_track && err_found){
+                        const errContent = {
+                            API_NAME: "remotePlayback fetch error in backend",
+                            stacktrace: err_found_stack_trace
+                        };
+
+                        const errMsgToSend = `ERR in remotePlayback fetch backend!`;
+                        setCurrErrMsgToSend(prev=>errMsgToSend);
+                        setErrContentToSend(prev=>errContent);
+
+                        if(currStage !== stages.ERR){
+                            setPrevStage(prev=>currStage);
+                            setCurrStage(prev=>stages.ERR);
+                        }
+                        //setHideError(prev=>false);
+                    }
 
 
-                      if(!atharv_track && !newPlaybackActive){
-
-                          if(oldPlaybackId.current === null || oldPlaybackId.current === "No-device-active" || (oldPlaybackId.current !== device_id && newPlaybackId.current !== device_id)){
+                    if(!atharv_track && !newPlaybackActive){
+                          if(oldPlaybackId.current === null || oldPlaybackId.current === "No-device-active" || (oldPlaybackId.current !== device_id && newPlaybackId.current !== device_id)) {
                                 oldPlaybackId.current = device_id;
                           }
-                                setCurrDeviceId(device_id);
+                          setCurrDeviceId(device_id);
 
                           console.log(`value of deviceId for the remote device is: ${device_id}`);
 
@@ -424,33 +387,63 @@ export default function SpotifyPLayer(){
                                img_url: img_url,
                                can_skip_prev: can_skip_prev,
                                is_in_sync: is_in_sync
-                           };
+                          };
 
 
-                            if(!metaData || track_uri !== metaData.track_uri || progress_ms !== metaData.progress_ms || is_playing !== metaData.is_playing){
+                          if(!metaData || track_uri !== metaData.track_uri || progress_ms !== metaData.progress_ms || is_playing !== metaData.is_playing){
                                     setMetaData(prev=>newMetaData);
-                            }
+                          }
                       }
                   } catch (e) {
-                      const err = {
-                          'error' : "something went wrong on parsing the received message"
-                      };
-                      setMetaData(prev => err); // plain text fallback
+                      //const err = {
+                      //    'error' : "something went wrong on parsing the received message"
+                      //};
+                      //setMetaData(prev => err); // plain text fallback
+
+                    const errContent = {
+                        API_NAME: "json parsing error",
+                        stacktrace: "Err while parsing json response in remote playback web socket!"
+                    };
+
+                    const errMsgToSend = `ERR in useEffect() while parsing recd ws JSON msg in SpotifyPlayer.jsx [447]: res status: ${resp.status}:${resp.statusText}`;
+                    setCurrErrMsgToSend(prev=>errMsgToSend);
+                    setErrContentToSend(prev=>errContent);
+
+                    if(currStage !== stages.ERR){
+                        setPrevStage(prev=>currStage);
+                        setCurrStage(prev=>stages.ERR);
+                    }
+                    //setHideError(prev=>false);
                   }
                 };
 
                 ws.onerror = (error) => {
-                  console.error("WebSocket error:", error);
-                };
+                    //console.error("WebSocket error:", error);
+                    const errContent = {
+                        API_NAME: "websocket/remote playback",
+                        stacktrace: "Err received in remote playback web socket!"
+                    };
 
-                ws.onclose = () => {
-                  console.log("WebSocket connection closed");
-                };
-            //wsRefDispatch({
-            //    type: 'enabled',
-            //    wsRef: ws
-            //});
-        }
+                    const errMsgToSend = `ERR in useEffect() while polling backend via ws in SpotifyPlayer.jsx [455]: res status: ${resp.status}:${resp.statusText}`;
+                    setCurrErrMsgToSend(prev=>errMsgToSend);
+                    setErrContentToSend(prev=>errContent);
+
+                    if(currStage !== stages.ERR){
+                        setPrevStage(prev=>currStage);
+                        setCurrStage(prev=>stages.ERR);
+                    }
+
+                    //setHideError(prev=>false);
+                    };
+
+                    ws.onclose = () => {
+                      console.log("WebSocket connection closed");
+                    };
+                //wsRefDispatch({
+                //    type: 'enabled',
+                //    wsRef: ws
+                //});
+            }
 
             // Cleanup on component unmount
             return () => {
@@ -465,274 +458,57 @@ export default function SpotifyPLayer(){
     },[disableWebSocket]);
 
 
-// effect that will only commit the final state if next track is not true
-   // useEffect(()=>{
-   //         if(!loadingNextTrack && !loadingPrevTrack){
-   //                 setMetaDataFinal(prev=>metaData);
-   //         }else{
-   //             if(metaDataFinal.track_uri && (metaDataFinal.track_uri !== metaData.track_uri || metaDataFinal.name !== metaData.name)){
-   //                 setMetaDataFinal(prev=>metaData);
-   //                 if(loadingNextTrack){
-   //                     setLoadingNextTrack(prev=>false);
-   //                 }
-   //                 if(loadingPrevTrack){
-   //                     setLoadingPrevTrack(prev=>false);
-   //                 }
-   //             }else{
-   //                 if(newPlaybackActive){
-   //                     setMetaDataFinal(prev=>metaData);
-   //                     if(loadingNextTrack){
-   //                         setLoadingNextTrack(prev=>false);
-   //                     }
-   //                     if(loadingPrevTrack){
-   //                         setLoadingPrevTrack(prev=>false);
-   //                     }
-   //                 }else{
-   //                     setLoadingPrevTrack(prev=>true);
-   //                     setLoadingNextTrack(prev=>true);
-   //                 }
-   //             }
-   //         }
-   // },[metaData]);
 
+    const [hideError, setHideError] = useState(false);
+    const [rebootDisable, setRebootDisable] = useState(true);
+    const [errReported, setErrReported] = useState(false);
+    const [reportingError, setReportingError] = useState(false);
 
-        //const [disableSyncUpdates, setDisableSyncUpdates] = useState(false);
-        //useEffect(() => {
-        //    //if(loadingNextTrack){
-        //    //    setLoadingNextTrack(prev=>false);
-        //    //}
-        //    if(!syncing && outOfSync && keepInSync && currDeviceId !== "No-device-active"){
-        //        (async ()=>{
-        //            await syncTrack();
-        //        })();
-        //        return;
-        //    }
-        //    if(disableSyncUpdates){
-        //        console.log("disabled the sync updates");
-        //        return;
-        //    }
-        //    console.log("running that effect");
-        //    const newOutOfSync = !(currTrackMetaData.track_uri && currTrackMetaData.track_uri === metaDataFinal.track_uri && Math.abs(currTrackMetaData.progress_ms-metaDataFinal.progress_ms) < 6000 && currTrackMetaData.is_playing === metaDataFinal.is_playing);
-        //    console.log(`value of newOutOfSync is : ${newOutOfSync} and keepInSync : ${keepInSync}`);
-        //    if(syncing){
-        //        if(!newOutOfSync){
-        //            setSyncing(prev => false);
-        //        }else{
-        //            console.log(`hehehehehehehehe tried to sync incorreclty!`);
-        //                (async ()=>{
-        //                    await syncTrack();
-        //                })();
-        //        }
-        //    }
+    async function sendEmailReport(){
+        setReportingError(prev=>true);
 
-        //    if(outOfSync !== newOutOfSync){
-        //        if(newOutOfSync && !keepInSync){
-        //            console.log("Yup was here indeeeeeeeed!");
-        //            setCurrStatus(prev=>1);
-        //        }
-        //        setOutOfSync(prev => newOutOfSync);
-        //    }
+        const params = new URLSearchParams();
+        params.append('session_id', sessionId);
+        // TODO: something to return from this request
 
+        const formData = new FormData();
+        formData.append("errMsg", currErrMsgToSend);
+        formData.append("errContentApiName", errContentToSend.API_NAME);
+        formData.append("errContentStackTrace", errContentToSend.stacktrace);
 
-        //}, [disableSyncUpdates, currTrackMetaData]);
+        const resp = await fetch(`http://127.0.0.1:3000/api/send_err_report?${params.toString()}`, {
+            method: 'POST',
+            body: formData
+        });
+        if(!resp.ok){
+                    //throw new Error("fetch to sending error report didn't work");
+                    const errContent = await resp.json();
+                    const errMsgToSend = `ERR in sendEmailReport() in SpotifyPlayer.jsx [762]: res status: ${resp.status}:${resp.statusText}`;
+                    setErrContentToSend(prev=>errContent);
+                    setCurrErrMsgToSend(prev=>errMsgToSend);
 
-
-
-    //let isIn = false;
-    //useEffect(()=>{
-    //    //if(isIn){return;}
-    //   // isIn = true;
-    //    console.log("is in the useEffect");
-
-    //const isInActive_ = metaDataFinal.name === "No music playing right now!" || metaDataFinal.name === "It seems Atharv is listening to a podcast!" || oldPlaybackId.current === "No-device-active";
-    //    console.log(`value of isInActive_: ${isInActive_}`);
-    //const isTrackInActive = currTrackMetaData.name === "No music playing right now!" || currTrackMetaData.name === "It seems Atharv is listening to a podcast!";
-
-    //    if(outOfSync && keepInSync && !isInActive_ && !isTrackInActive){
-    //                      const onlyPaused = (currTrackMetaData.track_uri && currTrackMetaData.track_uri === metaDataFinal.track_uri && Math.abs(currTrackMetaData.progress_ms-metaDataFinal.progress_ms) < 6000) && currTrackMetaData.is_playing !== metaDataFinal.is_playing && !currTrackMetaData.is_playing;
-    //        if (!onlyPaused || currTrackMetaData.is_playing){
-    //            console.log("xxxxxxx Trying to sync yet again xxxxxxx");
-    //                            (async ()=>{
-    //                                await syncTrack();
-    //                                if(!currTrackMetaData.is_playing){
-    //                                    if(newPlaybackActive){
-    //                                        playerRef.pause().then(() => {
-    //                                              console.log('Paused!');
-    //                                        });
-    //                                    }else{
-    //                                        (async ()=>{await pauseTrack();})();
-    //                                    }
-    //                                }
-    //                            })();
-    //            //syncTrack2();
-
-    //        }else{
-    //            if(newPlaybackActive){
-    //                playerRef.pause().then(() => {
-    //                      console.log('Paused!');
-    //                });
-    //            }else{
-    //                (async ()=>{await pauseTrack();})();
-    //            }
-    //        }
-    //        console.log("completed the request");
-    //    }
-    //    //isIn = false;
-    //    console.log("going out of useEffect");
-    //}, [outOfSync, keepInSync, currDeviceId]);
-
-
-
-    const [runAgain, setRunAgain] = useState(false);
-    useEffect(()=>{
-        if(playerRef && newPlaybackActive){
-            //while (!initPlayer){
-            //console.log("helele");
-            playerRef.getCurrentState().then(state => {
-                if(!state){ setRunAgain(prev => !prev); console.log("no state while initing player state!!!"); return ()=>{};}
-                   const trackObj = state.track_window.current_track;
-                   const img_url = trackObj.album.images[0].url;
-                   let duration_ms = 0;
-                   (async ()=>{
-                       duration_ms = await getDuration(trackObj.id);
-                       const newMetaData = {
-                           track_uri: trackObj.uri,
-                           progress_ms: state.position,
-                           duration_ms: Math.max(metaData.duration_ms, duration_ms),
-                           name: state.track_window.current_track.name,
-                           is_playing: !state.paused,
-                           artists: state.track_window.current_track.artists.map(artist => {
-                               return artist.name;
-                           }),
-                           img_url: img_url
-                       };
-                       console.log("setting metadata");
-                       setMetaData(prev => newMetaData);
-                   })();
-                   console.log(`found the duration of the song it was, ${duration_ms}`);
-
-                    console.log("was here setting initPlayer");
-                    if(!initPlayer){setInitPlayer(prev => true);}
-            });
-        }
-        return ()=>{};
-    }, [playerRef, runAgain, newPlaybackActive]);
-
-
-
-    const freezeLimit = useRef(0);
-    const intervalId = useRef(null);
-    const [disableMetaDataEffect, setDisableMetaDataEffect] = useState(false);
-    useEffect(()=>{
-        //let intervalId = null;
-        if(disableMetaDataEffect){
-                if(intervalId.current){
-                    clearInterval(intervalId.current);
-                }else{
-                    console.log("tried to clear intervalId even before it was set.");
-                }
-                return;
-        }
-
-        if(!newPlaybackActive){
-            if(intervalId.current){
-                clearInterval(intervalId.cuurent);
-            }
-           // return;
-        }
-
-        if(playerRef && !disableMetaDataEffect && newPlaybackActive && initPlayer){
-            intervalId.current = setInterval(()=>{
-                playerRef.getCurrentState().then(state=>{
-                    if(!state){
-                        if(freezeLimit.current > 10){
-                            setDisableSyncUpdates(true);
-                            setDisableMetaDataEffect(true);
-                            disableWebSocketDispatch({
-                                type: "disable",
-                                disable: true
-                            });
-
-                        }else{
-                            freezeLimit.current++;
-                        }
-                        console.log("No state found returning...");
-                        return;
+                    if(currStage !== stages.ERR){
+                        setPrevStage(prev=>currStage);
+                        setCurrStage(prev=>stages.ERR);
                     }
 
-                   const trackObj = state.track_window.current_track;
-                   const img_url = trackObj.album.images[0].url;
-                   let duration_ms = metaData.duration_ms;
-                    if(trackObj.uri !== metaData.track_uri){
-                        console.log(`hooorahhhhhhh getting duration bayyyyyyyyyyyyyyyyyyyy`);
-                        (async ()=>{
-                           duration_ms = await getDuration(trackObj.id);
-                           const newMetaData = {
-                               track_uri: trackObj.uri,
-                               progress_ms: state.position,
-                               duration_ms: duration_ms,
-                               name: state.track_window.current_track.name,
-                               is_playing: !state.paused,
-                               artists: state.track_window.current_track.artists.map(artist => {
-                                   return artist.name;
-                               }),
-                               img_url: img_url
-                           };
-                          setMetaData(prev => newMetaData);
-                        })();
-                        console.log(`found the duration of the song it was, ${duration_ms}`);
-                    }else{
-                           const newMetaData = {
-                               track_uri: trackObj.uri,
-                               progress_ms: state.position,
-                               duration_ms: duration_ms,
-                               name: state.track_window.current_track.name,
-                               is_playing: !state.paused,
-                               artists: state.track_window.current_track.artists.map(artist => {
-                                   return artist.name;
-                               }),
-                               img_url: img_url
-                           };
-                          setMetaData(prev => newMetaData);
-                    }
-
-                    //if(loadingPrevTrack.current){
-                    //    setLoadingPrevTrack(prev=>false);
-                    //}
-                    //if(loadingNextTrack.current){
-                    //    setLoadingNextTrack(prev=>false);
-                    //}
-
-                });
-            }, 1500);
+                    //setHideError(prev=>false);
+                    setErrReported(prev=>false);
+                    setReportingError(prev=>false);
+                    return;
         }
-
-        return () =>{
-            if (intervalId.current){
-                clearInterval(intervalId.current);
-            }
-        };
-    }, [playerRef, disableMetaDataEffect, newPlaybackActive]);
-
-
-
-    async function transferNewPlayback(){
-        await transferPlayback(newPlaybackId.current);
-        setNewPlaybackActive(prev=>true);
+        setReportingError(prev=>false);
+        setErrReported(prev=>true);
     }
 
 
 
-    async function transferOldPlayback(){
-        setNewPlaybackActive(prev=>false);
-        setInitPlayer(prev=>false);
-        console.log(`oooooooooooo the old playback device id is: ${oldPlaybackId.current}`);
-        await transferPlayback(oldPlaybackId.current);
-    }
+    const [emailSent, setEmailSent] = useState(false);
 
     const deviceIds = playerRef ? ["This-device", "Other-device"] : ["Other-device"];
 
     const [currStatus, setCurrStatus] = useState(1);
+
 
     if(!keepInSync && !metaData.is_in_sync && currStatus !== 1){
         setCurrStatus(prev=>1);
@@ -749,104 +525,338 @@ export default function SpotifyPLayer(){
 
     console.log(`currTrackMetaData.duration_ms: ${currTrackMetaData.duration_ms}`);
     const rendering = (((!initPlayer && newPlaybackActive) || loadingNextTrack || loadingPrevTrack || syncing || transferringPlayback || metaData.name === "No Name") || (!metaData.is_in_sync && keepInSync));
+
     console.log(`value of syncing is: ${syncing}`);
-    return ( <div className="player-container">
-        {
-                <Player
-                             rendering={rendering}
-                             currStatus={currStatus}
-                             isInActive={isInActive}
-                             isTrackInActive={isTrackInActive}
-                             canSkipPrev={(!newPlaybackActive && metaData.can_skip_prev) || newPlaybackActive}
-                             metaData={metaData}
-                             activeDeviceId={newPlaybackActive ? "This-device" : "Other-device"}
-                             deviceIds={deviceIds}
-                             pauseTrackHandleOldAndNew={pauseTrackHandleOldAndNew}
-                             resumeTrackHandleOldAndNew={resumeTrackHandleOldAndNew}
-                             nextTrack={nextTrack}
-                             setLoadingNextTrack={setLoadingNextTrack}
-                             prevTrack={prevTrack}
-                             setLoadingPrevTrack={setLoadingPrevTrack}
-                             transferOldPlayback={transferOldPlayback}
-                             transferNewPlayback={transferNewPlayback}
-                             seekTrack={seekTrack}
-                />
-        }
-        {/*<LoggedoutBanner/>*/}
-        {
-                    <div className="player-sep"
-                        style={{
-                            position: "absolute",
-                            width: "100%",
-                            top: "55.70%",
-                            left: "0%"
-                        }}
-                    >
-                        <hr
-                            style={{
-                                border: "none",
-                                height: "2px",
-                                width: "100%",
-                                backgroundColor: "#000000",
-                                margin: "0"
-                            }}
-                        />
-                    </div>
-        }
-        {!isInActive && !isTrackInActive &&
-            <PlayerControls
-                disabled={rendering || lockingOut || seeking}
-                currStatus={currStatus}
-                setCurrStatus={setCurrStatus}
-                syncTrack={syncTrack}
-                lockTrack={lockTrack}
-                lockOutTrack={lockOutTrack}
-                setKeepInSync={setKeepInSync}
-            />
-        }
-        {isInActive &&
-            <div className="control-container">
-                <div className="open-spotify-msg">
-                    <div className="open-spotify-msg-text">
-                        Seems like spotify is offline. May be open the app on your mobile?
-                    </div>
+
+    let currPlayerJsx = <> </>;
+
+    switch(currStage){
+        case stages.ERR:
+            currPlayerJsx =  <>
+                {
+                        (
+                            <ErrorBanner
+                                errMsg={!errReported ? "Error! Click here to report! before Reboot": "Reported! Please Refresh."}
+                                onClickTrigger={
+                                        ()=>{
+                                            if(!reportingError){
+                                                (async ()=>{await sendEmailReport();})();
+                                            }
+                                        }
+                                }
+                                reporting={reportingError}
+                                isTrack={false}
+                            />
+                        )
+                }
+                <div className="player-container">
+                        (
+                            <RebootButton
+                                 disabled={!errReported}
+                                 setCurrStage={setCurrStage}
+                                 setPrevStage={setPrevStage}
+                                 prevStage={prevStage}
+                                 setErrReported={setErrReported}
+                                 isTrack={false}
+                            />
+                        )
                 </div>
+                </>;
+            break;
+
+        case stages.MAIL:
+           currPlayerJsx = <>
+                <div className="player-container">
+                    <EmailInput emailSent={emailSent} setEmailSent={setEmailSent}/>
+                </div>
+            </>;
+            break;
+        case stages.OTP_UNVERIFIED:
+            currPlayerJsx = <>
+                <div className="player-container">
+                    <OTPinput emailSent={emailSent} setEmailSent={setEmailSent}/>
+                </div>
+                </>;
+            break;
+        case stages.UNAPPROVED:
+            currPlayerJsx = <>
+                <div className="player-container">
+                    <div className="approval-msg">Your approval is pending. check your mail for updates.</div>
+                </div>
+                </>;
+            break;
+        case stages.UNAUTHORIZED:
+            currPlayerJsx = <>
+                <div className="player-container">
+                        <div className="player-container">
+                            <div className="player-track">
+                                <div className="login-prompt">
+                                    Authorize Spotify to sync your playback with Atharv...
+                                </div>
+                            </div>
+
+                            <div className="player-sep"
+                                style={{
+                                    position: "absolute",
+                                    width: "100%",
+                                    top: "55.70%",
+                                    left: "0%"
+                                }}
+                            >
+                                <hr
+                                    style={{
+                                        border: "none",
+                                        height: "2px",
+                                        width: "100%",
+                                        backgroundColor: "#000000",
+                                        margin: "0"
+                                    }}
+                                />
+                            </div>
+
+                            <div className="control-container">
+                                <a href="http://127.0.0.1:3000/api/spotify_login_once">
+                                    <button className="login-btn"
+                                        onMouseDown={loginBtnMouseDownHn}
+                                        style={{
+                                            transform: `scale(${loginBtnDown ? 0.95 : 1})`
+                                        }}
+                                    >Log in with <img src={spotify_icon}
+                                        style={{
+                                            position: "absolute",
+                                            top: "50%",
+                                            transform: "translateY(-50%)",
+                                            height: "40%",
+                                            width: "20%",
+                                            marginTop: "7.5%"
+                                        }}
+                                    />
+                                    </button>
+                                </a>
+                            </div>
+                        </div>
+                </div>
+                </>;
+            break;
+        case stages.NOT_PREMIUM:
+            currPlayerJsx = <>
+                        (
+                            <div className="player-container">
+                                <div className="player-track">
+                                    <div className="login-prompt"
+                                        style={{
+                                            top: "25%"
+                                        }}
+                                    >
+                                        Hey! it seems you don't have spotify Premium. This feature requires it... may be get one...?
+                                    </div>
+                                </div>
+
+                                <div className="player-sep"
+                                    style={{
+                                        position: "absolute",
+                                        width: "100%",
+                                        top: "55.70%",
+                                        left: "0%"
+                                    }}
+                                >
+                                <hr
+                                    style={{
+                                        border: "none",
+                                        height: "2px",
+                                        width: "100%",
+                                        backgroundColor: "#000000",
+                                        margin: "0"
+                                    }}
+                                />
+                                </div>
+
+                                <div className="control-container">
+                                    <a href="https://www.spotify.com/in-en/premium/" target="_blank">
+                                        <button className="login-btn"
+                                            onMouseDown={loginBtnMouseDownHn}
+                                            style={{
+                                                transform: `scale(${loginBtnDown ? 0.95 : 1})`
+                                            }}
+                                        ><img src={spotify_icon}
+                                            style={{
+                                                position: "absolute",
+                                                top: "50%",
+                                                transform: "translateY(-50%)",
+                                                height: "40%",
+                                                width: "20%",
+                                                marginTop: "7.5%"
+                                            }}
+                                        /> Premium
+                                        </button>
+                                    </a>
+                                </div>
+                            </div>
+                        )
+                </>;
+            break;
+        case stages.ALL_CLEAR:
+                currPlayerJsx = <>
+                            <Player
+                                 rendering={rendering}
+                                 currStatus={currStatus}
+                                 isInActive={isInActive}
+                                 isTrackInActive={isTrackInActive}
+                                 canSkipPrev={(!newPlaybackActive && metaData.can_skip_prev) || newPlaybackActive}
+                                 metaData={metaData}
+                                 activeDeviceId={newPlaybackActive ? "This-device" : "Other-device"}
+                                 deviceIds={deviceIds}
+                                 pauseTrackHandleOldAndNew={pauseTrackHandleOldAndNew}
+                                 resumeTrackHandleOldAndNew={resumeTrackHandleOldAndNew}
+                                 nextTrack={nextTrack}
+                                 setLoadingNextTrack={setLoadingNextTrack}
+                                 prevTrack={prevTrack}
+                                 setLoadingPrevTrack={setLoadingPrevTrack}
+                                 seekTrack={seekTrack}
+                            />
+
+                        <div className="player-sep"
+                            style={{
+                                position: "absolute",
+                                width: "100%",
+                                top: "55.70%",
+                                left: "0%"
+                            }}
+                        >
+                            <hr
+                                style={{
+                                    border: "none",
+                                    height: "2px",
+                                    width: "100%",
+                                    backgroundColor: "#000000",
+                                    margin: "0"
+                                }}
+                            />
+                        </div>
+
+                {!isInActive && !isTrackInActive && !hidePlayerControls &&(
+                <PlayerControls
+                    disabled={rendering || lockingOut || seeking}
+                    currStatus={currStatus}
+                    setCurrStatus={setCurrStatus}
+                    syncTrack={syncTrack}
+                    lockTrack={lockTrack}
+                    lockOutTrack={lockOutTrack}
+                    setKeepInSync={setKeepInSync}
+                />)}
+
+                {isInActive && (
+                <div className="control-container">
+                    <div className="open-spotify-msg">
+                        <div className="open-spotify-msg-text">
+                            Seems like spotify is offline. May be open the app on your mobile?
+                        </div>
+                    </div>
+                </div>)}
+                </>;
+
+    }
+
+
+
+
+
+
+    return (
+
+        <>
+            {
+                !hideError &&
+                    (
+                        <ErrorBanner
+                            errMsg={!errReported ? "Error! Click here to report! before Reboot": "Reported! Please Refresh."}
+                            onClickTrigger={
+                                    ()=>{
+                                        if(!reportingError){
+                                            (async ()=>{await sendEmailReport();})();
+                                        }
+                                    }
+                            }
+                            reporting={reportingError}
+                            isTrack={false}
+                        />
+                    )
+            }
+
+
+            <div className="player-container">
+                { !hideError ?
+                   (<OTPinput emailSent={emailSent} setEmailSent={setEmailSent}/>)
+                   (<EmailInput emailSent={emailSent} setEmailSent={setEmailSent}/>)
+                   // (
+                   //     <RebootButton
+                   //          disabled={!errReported}
+                   //          setHideError={setHideError}
+                   //          setErrReported={setErrReported}
+                   //          isTrack={false}
+                   //     />
+                   // )
+                    :
+                        (
+                            <>
+                            <Player
+                                 rendering={rendering}
+                                 currStatus={currStatus}
+                                 isInActive={isInActive}
+                                 isTrackInActive={isTrackInActive}
+                                 canSkipPrev={(!newPlaybackActive && metaData.can_skip_prev) || newPlaybackActive}
+                                 metaData={metaData}
+                                 activeDeviceId={newPlaybackActive ? "This-device" : "Other-device"}
+                                 deviceIds={deviceIds}
+                                 pauseTrackHandleOldAndNew={pauseTrackHandleOldAndNew}
+                                 resumeTrackHandleOldAndNew={resumeTrackHandleOldAndNew}
+                                 nextTrack={nextTrack}
+                                 setLoadingNextTrack={setLoadingNextTrack}
+                                 prevTrack={prevTrack}
+                                 setLoadingPrevTrack={setLoadingPrevTrack}
+                                 seekTrack={seekTrack}
+                            />
+
+                        <div className="player-sep"
+                            style={{
+                                position: "absolute",
+                                width: "100%",
+                                top: "55.70%",
+                                left: "0%"
+                            }}
+                        >
+                            <hr
+                                style={{
+                                    border: "none",
+                                    height: "2px",
+                                    width: "100%",
+                                    backgroundColor: "#000000",
+                                    margin: "0"
+                                }}
+                            />
+                        </div>
+
+                {!isInActive && !isTrackInActive && !hidePlayerControls &&(
+                <PlayerControls
+                    disabled={rendering || lockingOut || seeking}
+                    currStatus={currStatus}
+                    setCurrStatus={setCurrStatus}
+                    syncTrack={syncTrack}
+                    lockTrack={lockTrack}
+                    lockOutTrack={lockOutTrack}
+                    setKeepInSync={setKeepInSync}
+                />)}
+
+                {isInActive && (
+                <div className="control-container">
+                    <div className="open-spotify-msg">
+                        <div className="open-spotify-msg-text">
+                            Seems like spotify is offline. May be open the app on your mobile?
+                        </div>
+                    </div>
+                </div>)}
+                </>)}
             </div>
-        }
-        </div>
+        </>
       )
-//    return (newPlaybackActive ? (!initPlayer ? (<p>loading player...</p>) : (loadingNextTrack ? <p>loading next track...</p>: <>
-//        <p> Playing on your device:</p> <pre>{prettyJson}</pre>
-//        {syncing ? <p> syncing...</p> : (outOfSync && !keepInSync && !syncing &&
-//        <button onClick={() => {/*syncTrack2();*/ syncTrack(currTrackMetaData.track_uri, currTrackMetaData.resource_uri, currTrackMetaData.progress_ms, currTrackMetaData.is_playing, currTrackMetaData.disc_number); }}>
-//            Sync In!
-//        </button>)
-//        }
-//        {!keepInSync && <button onClick={() => nextTrack()}>Next track</button>}
-//        {!keepInSync ? <button onClick={() => setKeepInSync(true)}>Keep in Sync!</button>:
-//            <button onClick={() => setKeepInSync(false)}>Out of Sync</button>}
-//        {!transferringPlayback ? <button onClick={() => transferOldPlayback()}> Transfer to old playback</button>:
-//            <p> Transferring...</p>}
-//
-//    </>)
-//    ) : (
-//        oldPlaybackId.current?
-//        (loadingNextTrack ? <p>loading next track...</p>: <>
-//                <p> Playing on your device:</p> <pre>{prettyJson}</pre>
-//                {syncing ? <p> syncing...</p> : (outOfSync && !keepInSync &&
-//                <button onClick={() => {/*syncTrack2();*/ syncTrack(currTrackMetaData.track_uri, currTrackMetaData.resource_uri, currTrackMetaData.progress_ms, currTrackMetaData.is_playing, currTrackMetaData.disc_number); }}>
-//                    Sync In!
-//                </button>)
-//                }
-//                {!keepInSync && <button onClick={() => nextTrack()}>Next track</button>}
-//                {!keepInSync ? <button onClick={() => setKeepInSync(true)}>Keep in Sync!</button>:
-//                    <button onClick={() => setKeepInSync(false)}>Out of Sync</button>}
-//                {!transferringPlayback ? <button onClick={() => transferNewPlayback()}> Transfer to new playback</button>:
-//                    <p> Transferring...</p>}
-//
-//        </>): (
-//            <p>It seems your device is offline...</p>
-//        )
-//    )
-//)
 }

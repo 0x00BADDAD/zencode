@@ -85,6 +85,12 @@ public class CacheManagerConfig {
                         .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
                         .entryTtl(Duration.ofMinutes(40)));
 
+        // Cache "approval status" with 5 days TTL
+        cacheConfigurations.put("approvalStatus",
+                RedisCacheConfiguration.defaultCacheConfig()
+                        .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
+                        .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
+                        .entryTtl(Duration.ofDays(5)));
 
         // Default TTL for all others: 30 minutes
         RedisCacheConfiguration defaultConfig =

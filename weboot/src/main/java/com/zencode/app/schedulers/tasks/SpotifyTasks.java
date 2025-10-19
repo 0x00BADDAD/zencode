@@ -40,6 +40,8 @@ import com.zencode.app.shared.SharedTrackMetaDataHolder;
 import org.springframework.kafka.core.KafkaTemplate;
 import java.util.UUID;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 
 
 @Component
@@ -68,6 +70,7 @@ public class SpotifyTasks {
 
     @Scheduled(fixedRate = 1200)
     public void fetchCurrSong(){
+        try{
 
             while(!myHandler.getFreshSessions().isEmpty()){
                 myHandler.getFreshSessions().forEach((key, value)-> {
@@ -97,7 +100,7 @@ public class SpotifyTasks {
                     isShow = context.equals("show");
                 }
                 if(isShow){
-                    TrackMetadataBean showBean = new TrackMetadataBean("It seems Atharv is listening to a podcast!", List.of(), "No-track", "No-resource", 0, 0, false, 0, true, "No-device-active", "No-img-url", false, false);
+                    TrackMetadataBean showBean = new TrackMetadataBean("It seems Atharv is listening to a podcast!", List.of(), "No-track", "No-resource", 0, 0, false, 0, true, "No-device-active", "No-img-url", false, false, false, "");
                     trackMetaDataHolder.setData(showBean);
                     myHandler.broadcast(showBean);
                     return;
@@ -134,7 +137,7 @@ public class SpotifyTasks {
                 String imgUrl = images.get(0).path("url").asText();
                 logger.debug("Got the album image url and it is: " + imgUrl);
 
-                TrackMetadataBean trackMetadataBean = new TrackMetadataBean(songName, artistsAll, trackUri, resourceUri, progress_ms, duration_ms, isPlaying, discNumber, true, deviceId, imgUrl, false, false);
+                TrackMetadataBean trackMetadataBean = new TrackMetadataBean(songName, artistsAll, trackUri, resourceUri, progress_ms, duration_ms, isPlaying, discNumber, true, deviceId, imgUrl, false, false, false, "");
                 //logger.debug("Song Name: "+ songName + " Artists: "+ artistsAll.toString());
                 logger.debug("Bean from spotify is: " + trackMetadataBean.toString());
                 trackMetaDataHolder.setData(trackMetadataBean);
@@ -144,13 +147,23 @@ public class SpotifyTasks {
 
             }else{
                 logger.debug("No song playing right now!");
-                TrackMetadataBean emptyBean = new TrackMetadataBean("No music playing right now!", List.of(), "No-track", "No-resource", 0, 0, false, 0, true, "No-device-active", "No-img-url", false, false);
+                TrackMetadataBean emptyBean = new TrackMetadataBean("No music playing right now!", List.of(), "No-track", "No-resource", 0, 0, false, 0, true, "No-device-active", "No-img-url", false, false, false, "");
                 trackMetaDataHolder.setData(emptyBean);
                 myHandler.broadcast(emptyBean);
                 //UUID uniqueId = UUID.randomUUID();
                 //KafkaTemplate.send("spotify-track-topic", uniqueId.toString(), emptyBean);
 
             }
+        }catch (Exception e){
+            StringWriter sw = new StringWriter();
+            e.printStackTrace(new PrintWriter(sw));
+            String stackTrace = sw.toString();
+            // after error occurs when trying to fetch the remote playback state, we broadcast a err bean
+            TrackMetadataBean errBean = new TrackMetadataBean("No music playing right now!", List.of(), "No-track", "No-resource", 0, 0, false, 0, true, "No-device-active", "No-img-url", false, false, true, stackTrace);
+            trackMetaDataHolder.setData(errBean);
+            myHandler.broadcast(errBean);
+
+        }
     }
 
 }

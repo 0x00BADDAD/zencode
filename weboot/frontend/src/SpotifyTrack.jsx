@@ -6,6 +6,8 @@ import Slider from './Slider.jsx';
 import DevicePane from './DevicePane.jsx';
 import ScrollingBanner from './ScrollingBanner.jsx';
 import LoadingBanner from './LoadingBanner.jsx';
+import RebootButton from './RebootButton.jsx';
+import ErrorBanner from './ErrorBanner.jsx';
 import starboy from './static/images/starboy.png';
 import play from './static/images/play.png';
 import pause from './static/images/pause.png';
@@ -22,6 +24,13 @@ export default function SpotifyTrack() {
     const [metaData, setMetaData] = useState({});
     const wsRefDispatch = useContext(WsRefDispatchContext);
 
+    const [currErrMsgToSend, setCurrErrMsgToSend] = useState("initial err message");
+    const [errContentToSend, setErrContentToSend] = useState({API_NAME: "/api/some_api", stacktrace: "some huge JVM trace"});
+    const [hideError, setHideError] = useState(true);
+    const [rebootDisable, setRebootDisable] = useState(true);
+    const [errReported, setErrReported] = useState(false);
+    const [reportingError, setReportingError] = useState(false);
+
     useEffect(()=>{
         let ws = null;
         if(!disableWebSocket){
@@ -34,7 +43,19 @@ export default function SpotifyTrack() {
                   try {
                     const data = JSON.parse(event.data); // if message is JSON
                     console.log(`data is: ${event}`);
-                    const {name, track_uri, resource_uri, artists , progress_ms, duration_ms, is_playing, disc_number, atharv_track, img_url}= data;
+                    const {name, track_uri, resource_uri, artists , progress_ms, duration_ms, is_playing, disc_number, atharv_track, img_url, err_found, err_found_stack_trace} = data;
+                      if(atharv_track && err_found){
+                          const errContent = {
+                              API_NAME: "ERR in SpotifyTrack.jsx, fetching from spotify backend!",
+                              stacktrace: err_found_stack_trace
+                          };
+
+                          const errMsgToSend = `ERR in websocket scheduled task (backend)`;
+                          setCurrErrMsgToSend(prev=>errMsgToSend);
+                          setErrContentToSend(prev=>errContent);
+                          setHideError(prev=>false);
+                          return;
+                      }
                       if(atharv_track){
                             const newMetaData = {
                                 name: name,
@@ -46,6 +67,8 @@ export default function SpotifyTrack() {
                                 disc_number: disc_number,
                                 resource_uri: resource_uri,
                                 img_url: img_url,
+                                err_found: err_found,
+                                err_found_stack_trace: err_found_stack_trace
                             };
 
                             if (!metaData || resource_uri !== metaData.resource_uri || progress_ms !== metaData.progress_ms || is_playing !== metaData.is_playing){
@@ -58,10 +81,19 @@ export default function SpotifyTrack() {
                             }
                       }
                   } catch (e) {
-                      const err = {
-                          'error' : "something went wrong on parsing the received message"
-                      };
-                      setMetaData(prev => err); // plain text fallback
+                      //const err = {
+                      //    'error' : "something went wrong on parsing the received message"
+                      //};
+                      //setMetaData(prev => err); // plain text fallback
+                    const errContent = {
+                        API_NAME: "ERR in SpotifyTrack.jsx, while parsing recd from ws JSON msg!",
+                        stacktrace: "Err while parsing json response in Atharv track playback web socket!"
+                    };
+
+                    const errMsgToSend = `ERR in useEffect() while parsing recd ws JSON msg in SpotifyTrack.jsx [447]: res status: ${resp.status}:${resp.statusText}`;
+                    setCurrErrMsgToSend(prev=>errMsgToSend);
+                    setErrContentToSend(prev=>errContent);
+                    setHideError(prev=>false);
                   }
                 };
 
@@ -95,10 +127,70 @@ export default function SpotifyTrack() {
 
     //const prettyJson = JSON.stringify(metaData, undefined, 2);
     //const deviceIds = ["This-device-1", "This-device-2", "This-device-3"];
+
+    async function sendEmailReport(){
+        setReportingError(prev=>true);
+
+        const params = new URLSearchParams();
+        params.append('session_id', sessionId);
+        // TODO: something to return from this request
+
+        const formData = new FormData();
+        formData.append("errMsg", currErrMsgToSend);
+        formData.append("errContentApiName", errContentToSend.API_NAME);
+        formData.append("errContentStackTrace", errContentToSend.stacktrace);
+
+        const resp = await fetch(`http://127.0.0.1:3000/api/send_err_report?${params.toString()}`, {
+            method: 'POST',
+            body: formData
+        });
+        if(!resp.ok){
+                    //throw new Error("fetch to sending error report didn't work");
+              const errContent = await resp.json();
+              const errMsgToSend = `ERR in sendEmailReport() in SpotifyPlayer.jsx [762]: res status: ${resp.status}:${resp.statusText}`;
+              setErrContentToSend(prev=>errContent);
+              setCurrErrMsgToSend(prev=>errMsgToSend);
+              setHideError(prev=>false);
+              setErrReported(prev=>false);
+              setReportingError(prev=>false);
+              return;
+        }
+        setReportingError(prev=>false);
+        setErrReported(prev=>true);
+    }
+
+
     const [loadingCoverPic, setLoadingCoverPic] = useState(false);
     const showLoadingBanner = Object.keys(metaData).length === 0;
     const isInActive = metaData.name==="No music playing right now!" || metaData.name==="It seems Atharv is listening to a podcast!";
-    return showLoadingBanner ? (<LoadingBanner track={true}/>) : (
+    const perCent = ((metaData.progress_ms || 0) / metaData.duration_ms) * 100;
+    return (
+        <>
+            {
+                !hideError &&
+                    (
+                        <ErrorBanner
+                            errMsg={!errReported ? "Error! Click here to report! before Reboot": "Reported! Please Refresh."}
+                            onClickTrigger={
+                                    ()=>{
+                                        if(!reportingError){
+                                            (async ()=>{await sendEmailReport();})();
+                                        }
+                                    }
+                            }
+                            reporting={reportingError}
+                            isTrack={true}
+                        />
+                    )
+            }
+
+
+
+
+            { !hideError ?
+                    (<LoadingBanner track={true} showReboot={true} errReported={errReported} setHideError={setHideError} setErrReported={setErrReported}/>)
+            :
+                (showLoadingBanner ? (<LoadingBanner track={true} showReboot={false}/>) : (
         <div className="track">
             {loadingCoverPic ? (<div className="loading-cover-pic"></div>) :
                     (<div className="cover-pic"><img src={!isInActive ? metaData.img_url : record_img} onLoadStart={()=>setLoadingCoverPic(prev=>true)} onLoad={()=>setLoadingCoverPic(prev=>false)}/></div>)
@@ -128,15 +220,12 @@ export default function SpotifyTrack() {
             /></div>
             <div className="next-track" style={{opacity: "0.3"}}><img src={next}/></div>
             <div className="prev-track" style={{opacity: "0.3"}}><img src={next} style={{transform: "rotate(180deg)"}}/></div>
-            <Slider elapsedTime={metaData.progress_ms} totalTime={metaData.duration_ms} isTrack={true} isInActive={isInActive}/>
+            <Slider perCent={Math.ceil(perCent)} isTrack={true} isInActive={isInActive}/>
             { /*<div className="timeline"></div>*/}
         </div>
+    )) }
+
+    </>
     );
 
-    //return (
-    //    <>
-    //        <p>Atharv's device:</p>
-    //        {Object.keys(metaData).length !== 0? (<pre>{prettyJson}</pre>) : (<p> loading track...</p>)}
-    //    </>
-    //);
 }

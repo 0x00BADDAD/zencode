@@ -1,10 +1,11 @@
 import './style.css';
-import {useContext, useState} from 'react';
+import {useContext, useEffect, useState} from 'react';
 import VertBar from './VertBar';
 import AutoTyping from './AutoTyping';
 import SpotifyLogin from './SpotifyLogin.jsx';
 import SpotifyTrack from './SpotifyTrack.jsx';
 import SpotifyPlayer from './SpotifyPlayer.jsx';
+import OfflineBanner from './OfflineBanner.jsx';
 import Overlay from './Overlay.jsx';
 import TrackMetaDataProvider from './Providers/TrackMetaDataProvider.jsx';
 import WsRefProvider from './Providers/WsRefProvider.jsx';
@@ -17,7 +18,7 @@ import spotify_icon from './static/images/spotify-icon.png';
 function App() {
     const disableWebSocket = useContext(DisableWebSocketContext);
     const [loginBtnDown, setLoginBtnDown] =  useState(false);
-
+    const [isOffline, setIsOffline] = useState(false);
 
     const loginBtnMouseDownHn = (e) => {
         e.preventDefault();
@@ -30,15 +31,26 @@ function App() {
         document.removeEventListener("mouseup", loginBtnMouseUpHn);
     }
 
+    useEffect(()=>{
+        window.addEventListener('offline', () => {
+            setIsOffline(prev=>true);
+        });
+
+        window.addEventListener('online', () => {
+            setIsOffline(prev=>false);
+        });
+    }, []);
+
     return (
     <>
         <WsRefProvider>
             <TrackMetaDataProvider initialTrackMetaData={initialTrackMetaData}>
+                <OfflineBanner isOffline={isOffline} />
                 <SpotifyTrack/>
                 {/*<SpotifyLogin/>*/}
                 {
                 userGrantedPermission ?
-                        ( isEligible ? <SpotifyPlayer/> :
+                        (isEligible ? <SpotifyPlayer/> :
                             (
                                 <div className="player-container">
                                     <div className="player-track">
@@ -59,15 +71,15 @@ function App() {
                                             left: "0%"
                                         }}
                                     >
-                                        <hr
-                                            style={{
-                                                border: "none",
-                                                height: "2px",
-                                                width: "100%",
-                                                backgroundColor: "#000000",
-                                                margin: "0"
-                                            }}
-                                        />
+                                    <hr
+                                        style={{
+                                            border: "none",
+                                            height: "2px",
+                                            width: "100%",
+                                            backgroundColor: "#000000",
+                                            margin: "0"
+                                        }}
+                                    />
                                     </div>
 
                                     <div className="control-container">

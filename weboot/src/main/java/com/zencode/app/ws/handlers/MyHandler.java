@@ -37,6 +37,8 @@ import java.nio.charset.StandardCharsets;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.List;
 import java.util.ArrayList;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -120,15 +122,16 @@ public class MyHandler extends TextWebSocketHandler {
 
 
     public void fetchRemotePlaybackTask(String sessionId){
+        try{
 
             UserSession currUserSession = this.userSessions.get(sessionId);
 
             if(currUserSession == null){
-                // don't do any fetch and just return
+                //don't do any fetch and just return
                 logger.debug("No song playing right now!");
-                TrackMetadataBean emptyBean = new TrackMetadataBean("No music playing right now!", List.of(), "No-track", "No-resource", 0, 0, false, 0, false, "No-device-active", "No-img-url", false, false);
+                TrackMetadataBean emptyBean = new TrackMetadataBean("No music playing right now!", List.of(), "No-track", "No-resource", 0, 0, false, 0, false, "No-device-active", "No-img-url", false, false, false, "");
                 //trackMetaDataHolder.setData(emptyBean);
-                // instead of sending the track updates to the web sockets, send it of the kafka topic
+                //instead of sending the track updates to the web sockets, send it of the kafka topic
                 broadcast(emptyBean);
                 return;
             }
@@ -158,7 +161,7 @@ public class MyHandler extends TextWebSocketHandler {
                 }
 
                 if(isShow){
-                    TrackMetadataBean showBean = new TrackMetadataBean("It seems Atharv is listening to a podcast!", List.of(), "No-track", "No-resource", 0, 0, false, 0, true, "No-device-active", "No-img-url", false, false);
+                    TrackMetadataBean showBean = new TrackMetadataBean("It seems Atharv is listening to a podcast!", List.of(), "No-track", "No-resource", 0, 0, false, 0, true, "No-device-active", "No-img-url", false, false, false, "");
                     broadcast(showBean);
                     return;
                 }
@@ -194,6 +197,12 @@ public class MyHandler extends TextWebSocketHandler {
                 //String deviceId = root.path("device").path("id").asText();
                 //String deviceId = cacheService.getDeviceId(sessionId);
                 String deviceId = currUserSession.getRemoteDeviceId();
+                if(deviceId.equals("")){
+                    logger.debug("YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY yup refreshed the deviceId");
+                    deviceId = cacheService.getDeviceId(sessionId);
+                    currUserSession.setRemoteDeviceId(deviceId);
+                    this.userSessions.put(sessionId, currUserSession);
+                }
 
                 String name = root.path("device").path("name").asText();
                 String songName = root.path("item").path("name").asText();
@@ -236,14 +245,17 @@ public class MyHandler extends TextWebSocketHandler {
                 //    imgUrl = currTrackMetaData.getImgUrl();
                 //    canSkipPrev = false;
                 //}
-                TrackMetadataBean trackMetadataBean = new TrackMetadataBean(songName, artistsAll, trackUri, resourceUri, progress_ms, duration_ms, isPlaying, discNumber, false, deviceId, imgUrl, canSkipPrev, isInSync);
+                TrackMetadataBean trackMetadataBean = new TrackMetadataBean(songName, artistsAll, trackUri, resourceUri, progress_ms, duration_ms, isPlaying, discNumber, false, deviceId, imgUrl, canSkipPrev, isInSync, false, "");
+
                 logger.debug("Bean from spotify is: " + trackMetadataBean.toString());
+
                 //logger.debug("Song Name: "+ songName + " Artists: "+ artistsAll.toString());
                 //trackMetaDataHolder.setData(trackMetadataBean);
                 //UUID uniqueId = UUID.randomUUID();
                 //KafkaTemplate.send("spotify-track-topic", uniqueId.toString(), trackMetadataBean);
                 remoteMetaDataHolder.setData(trackMetadataBean);
                 broadcast(trackMetadataBean);
+
 
 
 
@@ -282,7 +294,6 @@ public class MyHandler extends TextWebSocketHandler {
                             URI uri_ = uriComponents.expand(deviceId).toUri();
 
                             // now do the actual PUT request to the spotify API
-                            //RestClient restClient = RestClient.create();
 
                             restClient.put()
                                 .uri(uri_)
@@ -305,9 +316,11 @@ public class MyHandler extends TextWebSocketHandler {
                         }
                     }
                 }
+
+
             }else{
                 logger.debug("No song playing right now!");
-                TrackMetadataBean emptyBean = new TrackMetadataBean("No music playing right now!", List.of(), "No-track", "No-resource", 0, 0, false, 0, false, "No-device-active", "No-img-url", false, false);
+                TrackMetadataBean emptyBean = new TrackMetadataBean("No music playing right now!", List.of(), "No-track", "No-resource", 0, 0, false, 0, false, "No-device-active", "No-img-url", false, false, false, "");
                 //trackMetaDataHolder.setData(emptyBean);
                 // instead of sending the track updates to the web sockets, send it of the kafka topic
                 remoteMetaDataHolder.setData(emptyBean);
@@ -315,6 +328,16 @@ public class MyHandler extends TextWebSocketHandler {
                 //UUID uniqueId = UUID.randomUUID();
                 //KafkaTemplate.send("spotify-track-topic", uniqueId.toString(), emptyBean);
             }
+        }catch(Exception e){
+            StringWriter sw = new StringWriter();
+            e.printStackTrace(new PrintWriter(sw));
+            String stackTrace = sw.toString();
+            // after error occurs when trying to fetch the remote playback state, we broadcast a err bean
+            TrackMetadataBean errBean = new TrackMetadataBean("No music playing right now!", List.of(), "No-track", "No-resource", 0, 0, false, 0, false, "No-device-active", "No-img-url", false, false, true, stackTrace);
+            broadcast(errBean);
+
+
+        }
             // try to get the array of all available devices for the current user...
 
             //JsonNode root_ = restClient.get()
@@ -349,6 +372,7 @@ public class MyHandler extends TextWebSocketHandler {
             logger.debug("conn setup for session_id: " + sessionId);
             freshSessions.put(session.getId(), sessionId);
             String deviceId = cacheService.getDeviceId(sessionId);
+            logger.debug("i///////////////The device Id gotten is...{}", deviceId);
             UserSession newSession = new UserSession(sessionId, false, true, deviceId, false);
             userSessions.put(sessionId, newSession);
             //startTask(sessionId);
