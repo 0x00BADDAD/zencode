@@ -65,18 +65,18 @@ public class CacheManagerConfig {
         Map<String, RedisCacheConfiguration> cacheConfigurations = new HashMap<>();
 
         // Cache "sessions" with 5 days TTL
-        cacheConfigurations.put("sessions",
-                RedisCacheConfiguration.defaultCacheConfig()
-                        .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
-                        .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
-                        .entryTtl(Duration.ofDays(5)));
+        //cacheConfigurations.put("sessions",
+        //        RedisCacheConfiguration.defaultCacheConfig()
+        //                .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
+        //                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
+        //                .entryTtl(Duration.ofDays(5)));
 
-        // Cache "refresh Token" with 5 days TTL
+        // Cache "refresh Token" with 1000 days TTL
         cacheConfigurations.put("refTok",
                 RedisCacheConfiguration.defaultCacheConfig()
                         .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
                         .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
-                        .entryTtl(Duration.ofDays(5)));
+                        .entryTtl(Duration.ofDays(1000)));
 
         // Cache "access Token" with 40 minutes of TTL
         cacheConfigurations.put("accTok",
@@ -85,12 +85,40 @@ public class CacheManagerConfig {
                         .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
                         .entryTtl(Duration.ofMinutes(40)));
 
-        // Cache "approval status" with 5 days TTL
-        cacheConfigurations.put("approvalStatus",
+        // Cache "mailId to sessionId" with 5 Days TTL from last access
+        cacheConfigurations.put("mailToSession",
                 RedisCacheConfiguration.defaultCacheConfig()
                         .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
                         .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
                         .entryTtl(Duration.ofDays(5)));
+
+        // Cache "sessionId to mailId" with 5 Days TTL from last access
+        cacheConfigurations.put("sessionToMail",
+                RedisCacheConfiguration.defaultCacheConfig()
+                        .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
+                        .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
+                        .entryTtl(Duration.ofDays(5)));
+
+        // Cache "mailId to status" with 1000 days TTL
+        cacheConfigurations.put("mailToStage",
+                RedisCacheConfiguration.defaultCacheConfig()
+                        .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
+                        .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
+                        .entryTtl(Duration.ofDays(1000)));
+
+        // Cache "mailId to Spotify mail Id with which user authorized" with 1000 days TTL
+        cacheConfigurations.put("mailToSpotifyMail",
+                RedisCacheConfiguration.defaultCacheConfig()
+                        .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
+                        .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
+                        .entryTtl(Duration.ofDays(1000)));
+
+        // Cache "mailId to OTP" with 60 secs TTL
+        cacheConfigurations.put("mailToOTP",
+                RedisCacheConfiguration.defaultCacheConfig()
+                        .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
+                        .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
+                        .entryTtl(Duration.ofSeconds(60)));
 
         // Default TTL for all others: 30 minutes
         RedisCacheConfiguration defaultConfig =

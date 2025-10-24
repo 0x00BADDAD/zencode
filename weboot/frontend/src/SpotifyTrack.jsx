@@ -70,7 +70,7 @@ export default function SpotifyTrack() {
                                 err_found: err_found,
                                 err_found_stack_trace: err_found_stack_trace
                             };
-
+                            console.log(`progres_ms: ${progress_ms} and duration_ms: ${duration_ms}`);
                             if (!metaData || resource_uri !== metaData.resource_uri || progress_ms !== metaData.progress_ms || is_playing !== metaData.is_playing){
                                 setMetaData(prev => newMetaData);
                                // setCurrTrackUri(prev => track_uri);
@@ -164,6 +164,8 @@ export default function SpotifyTrack() {
     const showLoadingBanner = Object.keys(metaData).length === 0;
     const isInActive = metaData.name==="No music playing right now!" || metaData.name==="It seems Atharv is listening to a podcast!";
     const perCent = ((metaData.progress_ms || 0) / metaData.duration_ms) * 100;
+    const elapsedTimeSec = Math.ceil(metaData.progress_ms/1000);
+    const totalTimeSec = Math.ceil(metaData.duration_ms/1000);
     return (
         <>
             {
@@ -178,6 +180,7 @@ export default function SpotifyTrack() {
                                         }
                                     }
                             }
+                            errReported={errReported}
                             reporting={reportingError}
                             isTrack={true}
                         />
@@ -220,7 +223,7 @@ export default function SpotifyTrack() {
             /></div>
             <div className="next-track" style={{opacity: "0.3"}}><img src={next}/></div>
             <div className="prev-track" style={{opacity: "0.3"}}><img src={next} style={{transform: "rotate(180deg)"}}/></div>
-            <Slider perCent={Math.ceil(perCent)} isTrack={true} isInActive={isInActive}/>
+            <Slider elapsedTime={elapsedTimeSec} totalTime={totalTimeSec} perCent={Math.ceil(perCent)} isTrack={true} isInActive={isInActive}/>
             { /*<div className="timeline"></div>*/}
         </div>
     )) }

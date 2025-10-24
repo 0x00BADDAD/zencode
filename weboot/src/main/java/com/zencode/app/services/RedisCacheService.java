@@ -44,45 +44,36 @@ public class RedisCacheService {
         this.cacheManager = redisCacheManager;
     }
 
-    public void setRefreshToken(String sessionId, String token){
+    public void setRefreshToken(String mailId, String token){
             Cache myCache1 = cacheManager.getCache("refTok");
-            myCache1.put(sessionId, token);
+            myCache1.put(mailId, token);
     }
 
-    public void setAccessToken(String sessionId, String token){
+    public void setAccessToken(String mailId, String token){
             Cache myCache1 = cacheManager.getCache("accTok");
-            myCache1.put(sessionId, token);
+            myCache1.put(mailId, token);
     }
 
-    public void setApprovalStatus(String mailId, String status){
-        Cache myCache1 = cacheManager.getCache("approvalStatus");
-        myCache1.put(mailId, status);
-    }
-
-
-    public void setSessionId(String sessionId){
-        Cache sessionCache = cacheManager.getCache("sessions");
-        sessionCache.put(sessionId, "true"); // it gets auotmatically removed when TTL completes.
-    }
 
     //@Cacheable(value = "sessions", key = "#a0")
     public boolean checkSessionId(String sessionId){
-        Cache sessionCache = cacheManager.getCache("sessions");
+        Cache sessionCache = cacheManager.getCache("sessionToMail");
         String val = sessionCache.get(sessionId, String.class);
         return val != null;
     }
 
     @Cacheable(value = "refTok", key = "#a0")
-    public String getRefreshToken(String sessionId){
-        logger.debug("Something went wrong, we are here in the RedisCacheService... session_id was "+ sessionId);
-        return ""; // shouldn't come here
+    public String getRefreshToken(String mailId){
+        logger.debug("Something went wrong, we are here in the RedisCacheService... mail_id was "+ mailId);
+        return null; // shouldn't come here
 
     }
 
     //@Cacheable(value = "deviceId", key = "#a0")
     public String getDeviceId(String sessionId){
         RedisCacheService proxy = (RedisCacheService) AopContext.currentProxy();
-        String accessToken = proxy.getAccessToken(sessionId);
+        String mailId = proxy.getSessionToMail(sessionId);
+        String accessToken = proxy.getAccessToken(mailId);
         RestClient restClient = RestClient.create();
 
         String authHeader = "Bearer " + accessToken;
@@ -105,9 +96,9 @@ public class RedisCacheService {
     }
 
     @Cacheable(value = "accTok", key = "#a0")
-    public String getAccessToken(String sessionId){
+    public String getAccessToken(String mailId){
             RedisCacheService proxy = (RedisCacheService) AopContext.currentProxy();
-            String refreshToken = proxy.getRefreshToken(sessionId);
+            String refreshToken = proxy.getRefreshToken(mailId);
 
             RestClient restClient = RestClient.create();
             String clientId = "9469751d45ca49cea94be50c071a3c65";
@@ -140,11 +131,60 @@ public class RedisCacheService {
 
     }
 
-    @Cacheable(value = "approvalStatus", key = "#a0")
-    public String getApprovalStatus(String mailId){
-        return "not"; // only for the first time this is called afterwards
+    @Cacheable(value = "sessionToMail", key = "#a0")
+    public String getSessionToMail(String sessionId){
+        return null;
     }
 
+    public void setSessionToMail(String sessionId, String mailId){
+        Cache myCache1 = cacheManager.getCache("sessionToMail");
+        myCache1.put(sessionId, mailId);
+    }
+
+    @Cacheable(value = "mailToSession", key = "#a0")
+    public String getMailToSession(String mailId){
+        return null;
+    }
+
+    public void setMailToSession(String mailId, String sessionId){
+        Cache myCache1 = cacheManager.getCache("mailToSession");
+        myCache1.put(mailId, sessionId);
+    }
+
+    @Cacheable(value = "mailToStage", key = "#a0")
+    public String getMailToStage(String mailId){
+        return null;
+    }
+
+    public void setMailToStage(String mailId, String stage){
+        Cache myCache1 = cacheManager.getCache("mailToStage");
+        myCache1.put(mailId, stage);
+    }
+
+    @Cacheable(value = "mailToOTP", key = "#a0")
+    public String getMailToOTP(String mailId){
+        return null;
+    }
+
+    public void setMailToOTP(String mailId, String OTP){
+        Cache myCache1 = cacheManager.getCache("mailToOTP");
+        myCache1.put(mailId, OTP);
+    }
+
+    public void evictMailToOTP(String mailId){
+        Cache myCache1 = cacheManager.getCache("mailToOTP");
+        myCache1.evict(mailId);
+    }
+
+    //public void setMailToOTP(String mailId, String OTP){
+    //    Cache myCache1 = cacheManager.getCache("mailToOTP");
+    //    myCache1.put(mailId, OTP);
+    //}
+
+    public void setMailToSpotifyMail(String mailId, String spotifyMailId){
+        Cache myCache1 = cacheManager.getCache("mailToSpotifyMail");
+        myCache1.put(mailId, spotifyMailId);
+    }
 }
 
 

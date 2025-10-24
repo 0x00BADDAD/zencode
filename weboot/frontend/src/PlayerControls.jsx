@@ -6,7 +6,7 @@ const STATUS = {
   LockedIn: 2
 };
 
-export default function PlayerControls({disabled, currStatus, setCurrStatus, syncTrack, lockTrack, lockOutTrack, setKeepInSync, isInActive}){
+export default function PlayerControls({disabled, isPodcast, currStatus, setCurrStatus, syncTrack, lockTrack, lockOutTrack, setKeepInSync, isInActive}){
 
     const [isClickedSync, setIsClickedSync] = useState(false);
     const [isClickedLock, setIsClickedLock] = useState(false);

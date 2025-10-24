@@ -98,6 +98,7 @@ public class SpotifyTasks {
                 boolean isShow = true;
                 if(context != null){
                     isShow = context.equals("show");
+                    logger.debug("---------------the context of spotify track is: {}", context);
                 }
                 if(isShow){
                     TrackMetadataBean showBean = new TrackMetadataBean("It seems Atharv is listening to a podcast!", List.of(), "No-track", "No-resource", 0, 0, false, 0, true, "No-device-active", "No-img-url", false, false, false, "");
@@ -117,7 +118,14 @@ public class SpotifyTasks {
                 String songName = root.path("item").path("name").asText();
 
                 String[] uriParts = trackUri.split(":");
-                logger.debug("The type of Spotify URI received is: " + uriParts[1]);
+                logger.debug("the songName is: {}", songName);
+                logger.debug("The type of Spotify URI received is: " + trackUri);
+                if(trackUri.equals("")){
+                    TrackMetadataBean showBean = new TrackMetadataBean("It seems Atharv is listening to a podcast!", List.of(), "No-track", "No-resource", 0, 0, false, 0, true, "No-device-active", "No-img-url", false, false, false, "");
+                    trackMetaDataHolder.setData(showBean);
+                    myHandler.broadcast(showBean);
+                    return;
+                }
 
                // String songName = root_.path("name").asText();
                 List<String> artistsAll = new ArrayList<>();

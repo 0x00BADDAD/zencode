@@ -2,9 +2,11 @@ import {useState, useRef, useEffect} from 'react';
 
 
 
-export default function Slider({perCent, isTrack, seekTrack, isInActive}){
+export default function Slider({elapsedTime, totalTime, isTrack, seekTrack, isInActive}){
+    console.log(`elapsedTime: ${elapsedTime} and totalTime: ${totalTime}`);
+    let perCent = Math.ceil((elapsedTime / totalTime) * 100);
     const [isDragging, setIsDragging] = useState(false);
-    const [currElapse, setCurrElapse] = useState(perCent);
+    const [currElapse, setCurrElapse] = useState(elapsedTime);
     const [seeking, setSeeking] = useState(false);
     const [pointHovered, setPointHovered] = useState(false);
     const timelineRef = useRef(null);
@@ -38,14 +40,14 @@ export default function Slider({perCent, isTrack, seekTrack, isInActive}){
         //clamp within container
         if (offsetX < 0) {offsetX = 0;}
         if (offsetX > rect.width) {offsetX = rect.width;}
-        const elapsed_ = Math.ceil((offsetX / rect.width) * 100);
+        const elapsed_ = Math.ceil((offsetX / rect.width) * totalTime);
         setCurrElapse(prev => elapsed_);
     }
 
     const mouseUpHandler = () =>{
         //console.log("mouseup fired! isDragging false");
         console.log(`-------> passing currElapse as: ${currElapseRef.current}`);
-        (async ()=>{await seekTrack(Math.floor(currElapseRef.current))})();
+        (async ()=>{await seekTrack(Math.floor(currElapseRef.current * 1000))})();
         setIsDragging(prev => false);
         setPointHovered(prev => false);
         document.removeEventListener("mousemove", moveHandler);
@@ -57,10 +59,10 @@ export default function Slider({perCent, isTrack, seekTrack, isInActive}){
         let offsetX = e.clientX - rect.left;
         if (offsetX < 0) {offsetX = 0;}
         if (offsetX > rect.width) {offsetX = rect.width;}
-        const elapsed_ = Math.ceil((offsetX / rect.width) * 100);
+        const elapsed_ = Math.ceil((offsetX / rect.width) * totalTime);
         setSeeking(prev=>true);
         setCurrElapse(prev => elapsed_);
-        (async ()=>{await seekTrack(Math.floor(elapsed_))})();
+        (async ()=>{await seekTrack(Math.floor(elapsed_ * 1000))})();
     }
 
     if(isTrack){
@@ -70,9 +72,9 @@ export default function Slider({perCent, isTrack, seekTrack, isInActive}){
     //let perCent = (elapsedTime / totalTime) * 100;
     console.log(`**************>the value of perCent is: ${perCent}`);
     if(seeking){
-        //perCent = (currElapse / totalTime) * 100;
+        perCent = Math.ceil((currElapse / totalTime) * 100);
         if(!isDragging){
-            if(Math.abs(elapsedTime - Math.floor(currElapse)) < 3000){setSeeking(prev=>false);}
+            if(Math.abs(elapsedTime - Math.floor(currElapse)) < 3){setSeeking(prev=>false);}
         }
     }
     //else{

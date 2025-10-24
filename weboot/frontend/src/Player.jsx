@@ -33,7 +33,9 @@ export default function Player({
     const ifCurrStatusIsLockedIn = !!(currStatus === 2);
     console.log(`---->value of song name: ${metaData.name}`);
     const perCent = ((metaData.progress_ms || 0) / metaData.duration_ms) * 100;
-    return (rendering || !!(metaData.loadingNext)) ? (<LoadingBanner track={false}/>) : (
+    const elapsedTimeSec = Math.ceil(metaData.progress_ms/1000);
+    const totalTimeSec = Math.ceil(metaData.duration_ms/1000);
+    return (rendering || !!(metaData.loadingNext)) ? (<LoadingBanner track={false} showReboot={false}/>) : (
         <div className="player-track">
             {loadingCoverPic ? (<div className="loading-cover-pic"></div>) :
                     (<div className="cover-pic"><img src={!isInActive ? metaData.img_url : record_img} onLoadStart={()=>setLoadingCoverPic(prev=>true)} onLoad={()=>setLoadingCoverPic(prev=>false)}/></div>)
@@ -80,8 +82,7 @@ export default function Player({
                 <img src={next} style={{transform: "rotate(180deg)"}}/>
             </div>
 
-
-            <Slider perCent={Math.ceil(perCent)} isTrack={ifCurrStatusIsLockedIn || isInActive} seekTrack={seekTrack} isInActive={isInActive}/>
+            <Slider elapsedTime={elapsedTimeSec} totalTime={totalTimeSec} isTrack={ifCurrStatusIsLockedIn || isInActive} seekTrack={seekTrack} isInActive={isInActive}/>
             { /*<div className="timeline"></div>*/}
         </div>
     );

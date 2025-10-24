@@ -80,6 +80,7 @@ public class MyHandler extends TextWebSocketHandler {
 
 
     private final Map<String, WebSocketSession> sessions = new ConcurrentHashMap<>();
+    private final Map<String, String> sessionToWsId = new ConcurrentHashMap<>();
     private final Map<String, String> freshSessions = new ConcurrentHashMap<>();
     private final Map<String, UserSession> userSessions = new ConcurrentHashMap<>();
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -132,14 +133,15 @@ public class MyHandler extends TextWebSocketHandler {
                 TrackMetadataBean emptyBean = new TrackMetadataBean("No music playing right now!", List.of(), "No-track", "No-resource", 0, 0, false, 0, false, "No-device-active", "No-img-url", false, false, false, "");
                 //trackMetaDataHolder.setData(emptyBean);
                 //instead of sending the track updates to the web sockets, send it of the kafka topic
-                broadcast(emptyBean);
+                broadcastToSession(emptyBean, sessionId);
                 return;
             }
             boolean isKeepInSync = currUserSession.isKeepInSync();
 
             logger.debug("sessionId used for fetchRemotePlaybackTask is " + sessionId);
             logger.debug("The keepInSync value associated with it is: {}", isKeepInSync);
-            String accessToken = cacheService.getAccessToken(sessionId);
+            String mailId  = cacheService.getSessionToMail(sessionId);
+            String accessToken = cacheService.getAccessToken(mailId);
             RestClient restClient = RestClient.create();
 
             // TODO: proper error handling on all scheduled tasks
@@ -161,8 +163,8 @@ public class MyHandler extends TextWebSocketHandler {
                 }
 
                 if(isShow){
-                    TrackMetadataBean showBean = new TrackMetadataBean("It seems Atharv is listening to a podcast!", List.of(), "No-track", "No-resource", 0, 0, false, 0, true, "No-device-active", "No-img-url", false, false, false, "");
-                    broadcast(showBean);
+                    TrackMetadataBean showBean = new TrackMetadataBean("It seems Atharv is listening to a podcast!", List.of(), "No-track", "No-resource", 0, 0, false, 0, false, "No-device-active", "No-img-url", false, false, false, "");
+                    broadcastToSession(showBean, sessionId);
                     return;
                 }
 
@@ -175,6 +177,13 @@ public class MyHandler extends TextWebSocketHandler {
                 Integer progress_ms = root.path("progress_ms").asInt();
                 boolean isPlaying = root.path("is_playing").asBoolean();
 
+                if(trackUri.equals("")){
+                    TrackMetadataBean showBean = new TrackMetadataBean("It seems you are listening to a podcast!", List.of(), "No-track", "No-resource", 0, 0, false, 0, false, "No-device-active", "No-img-url", false, false, false, "");
+                    //trackMetaDataHolder.setData(showBean);
+                    remoteMetaDataHolder.setData(showBean);
+                    broadcastToSession(showBean, sessionId);
+                    return;
+                }
 
                 boolean isPlaylist = context.equals("playlist");
                 boolean isAlbum = context.equals("album");
@@ -254,7 +263,7 @@ public class MyHandler extends TextWebSocketHandler {
                 //UUID uniqueId = UUID.randomUUID();
                 //KafkaTemplate.send("spotify-track-topic", uniqueId.toString(), trackMetadataBean);
                 remoteMetaDataHolder.setData(trackMetadataBean);
-                broadcast(trackMetadataBean);
+                broadcastToSession(trackMetadataBean, sessionId);
 
 
 
@@ -324,7 +333,7 @@ public class MyHandler extends TextWebSocketHandler {
                 //trackMetaDataHolder.setData(emptyBean);
                 // instead of sending the track updates to the web sockets, send it of the kafka topic
                 remoteMetaDataHolder.setData(emptyBean);
-                broadcast(emptyBean);
+                broadcastToSession(emptyBean, sessionId);
                 //UUID uniqueId = UUID.randomUUID();
                 //KafkaTemplate.send("spotify-track-topic", uniqueId.toString(), emptyBean);
             }
@@ -334,7 +343,7 @@ public class MyHandler extends TextWebSocketHandler {
             String stackTrace = sw.toString();
             // after error occurs when trying to fetch the remote playback state, we broadcast a err bean
             TrackMetadataBean errBean = new TrackMetadataBean("No music playing right now!", List.of(), "No-track", "No-resource", 0, 0, false, 0, false, "No-device-active", "No-img-url", false, false, true, stackTrace);
-            broadcast(errBean);
+            broadcastToSession(errBean, sessionId);
 
 
         }
@@ -366,11 +375,12 @@ public class MyHandler extends TextWebSocketHandler {
         WebSocketSession safeSession = new ConcurrentWebSocketSessionDecorator(
             session,
             20_000,  // send timeout in ms
-            1024     // buffer size in bytes
+            1024 * 1024 * 10     // buffer size in bytes
         );
         if(sessionId != null){
             logger.debug("conn setup for session_id: " + sessionId);
             freshSessions.put(session.getId(), sessionId);
+            sessionToWsId.put(sessionId, session.getId());
             String deviceId = cacheService.getDeviceId(sessionId);
             logger.debug("i///////////////The device Id gotten is...{}", deviceId);
             UserSession newSession = new UserSession(sessionId, false, true, deviceId, false);
@@ -386,9 +396,12 @@ public class MyHandler extends TextWebSocketHandler {
         String sessionId = (String) session.getAttributes().get("session_id");
         // Remove session
         sessions.remove(session.getId());
+
         if(sessionId != null){
+            logger.debug("sesionId when closing the ws conn recd is: {}", sessionId);
             stopTask(sessionId);
             userSessions.remove(sessionId);
+            sessionToWsId.remove(sessionId);
         }
         logger.debug("[][][][][][][]Session removed: " + session.getId());
     }
@@ -422,6 +435,24 @@ public class MyHandler extends TextWebSocketHandler {
                 // log and remove dead sessions
             }
         }
+    }
+
+    public void broadcastToSession(TrackMetadataBean message, String sessionId) {
+        //logger.debug("broadcasting message to clients with count " + sessions.size());
+        String wsSessionId = this.sessionToWsId.get(sessionId);
+        WebSocketSession session = this.sessions.get(wsSessionId);
+        //for (WebSocketSession session : sessions.values()) {
+        try {
+            String json = objectMapper.writeValueAsString(message);
+            if (session.isOpen()){
+                session.sendMessage(new TextMessage(json)); // no need to synchronize
+            }else{
+                logger.debug("Session is stale!!!");
+            }
+        } catch (IOException e) {
+            // log and remove dead sessions
+        }
+        //}
     }
 }
 

@@ -2,7 +2,7 @@ import {useState, useEffect, useContext, useRef} from 'react';
 import reboot_icon from './static/images/refresh.png';
 import {stages} from './stages.jsx';
 
-export default function RebootButton({disabled, setCurrStage, setPrevStage, prevStage, setErrReported, isTrack}){
+export default function RebootButton({disabled, setHideError, setCurrStage, setPrevStage, prevStage, setErrReported, isTrack}){
 
     const [isClickedReboot, setIsClickedReboot] = useState(false);
 
@@ -13,6 +13,12 @@ export default function RebootButton({disabled, setCurrStage, setPrevStage, prev
 
     const onMouseUp_Reboot_Handler = () => {
         setIsClickedReboot(prev=>false);
+        if(isTrack){
+            setHideError(prev=>true);
+            setErrReported(prev=>false);
+            document.removeEventListener("mouseup", onMouseUp_Reboot_Handler);
+            return;
+        }
         //once we are out of err stage we dont keep the history of what happend
         setPrevStage(prev=>null);
         setCurrStage(prev=>(prevStage || stages.MAIL));

@@ -39,6 +39,7 @@ function App() {
         window.addEventListener('online', () => {
             setIsOffline(prev=>false);
         });
+        //console.log(`value of the currEmailGlobal is ${currEmailGlobal}`);
     }, []);
 
     return (
@@ -48,7 +49,8 @@ function App() {
                 <OfflineBanner isOffline={isOffline} />
                 <SpotifyTrack/>
                 {/*<SpotifyLogin/>*/}
-                {
+                <SpotifyPlayer/>
+                {/*
                 userGrantedPermission ?
                         (isEligible ? <SpotifyPlayer/> :
                             (
@@ -156,7 +158,7 @@ function App() {
                             </div>
                         </div>
                     )
-                }
+                        */}
                 <Overlay/>
             </TrackMetaDataProvider>
         </WsRefProvider>

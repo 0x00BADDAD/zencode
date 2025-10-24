@@ -11,6 +11,7 @@ import OTPinput from './OTPinput.jsx';
 import LoggedoutBanner from './LoggedoutBanner.jsx';
 import PlayerControls from './PlayerControls.jsx';
 import {stages} from './stages.jsx';
+import spotify_icon from './static/images/spotify-icon.png';
 
 async function fetchAccessToken(sessionId){
         const params = new URLSearchParams();
@@ -41,7 +42,7 @@ export default function SpotifyPLayer(){
 
     const [loadingPrevTrack, setLoadingPrevTrack] = useState(false);
 
-    const [transferringPlayback, setTransferringPlayback] = useState(false);
+    //const [transferringPlayback, setTransferringPlayback] = useState(false);
     // currTrackMetaData is the most updated value of the track meta data right from the
     // spotify backend but with an extra websocket hop in between.
     const currTrackMetaData = useContext(TrackMetaDataContext);
@@ -59,7 +60,8 @@ export default function SpotifyPLayer(){
     const [errContentToSend, setErrContentToSend] = useState({API_NAME: "/api/some_api", stacktrace: "some huge JVM trace"});
     //const [playbackTransferred, setPlaybackTransferred] = useState(false);
 
-    const [currStage, setCurrStage] = useState(initialStage);
+    const [currStage, setCurrStage] = useState(stageFromServer);
+
     const [prevStage, setPrevStage] = useState(null);
 
     const initialMetaData = {
@@ -73,8 +75,6 @@ export default function SpotifyPLayer(){
     };
 
     const [metaData, setMetaData] = useState(initialMetaData);
-
-
 
     async function syncTrack(){
 
@@ -339,7 +339,7 @@ export default function SpotifyPLayer(){
     //web socket that will receive messages from the backend for the metaData for old playback
     useEffect(()=>{
         let ws = null;
-        if(!disableWebSocket){
+        if(!disableWebSocket && currStage === stages.ALL_CLEAR){
                 //Connect to WebSocket server
                 ws = new WebSocket(`ws://127.0.0.1:3000/ws1?session_id=${sessionId}`);
                 //setSocket(ws);
@@ -369,10 +369,10 @@ export default function SpotifyPLayer(){
 
 
                     if(!atharv_track && !newPlaybackActive){
-                          if(oldPlaybackId.current === null || oldPlaybackId.current === "No-device-active" || (oldPlaybackId.current !== device_id && newPlaybackId.current !== device_id)) {
-                                oldPlaybackId.current = device_id;
-                          }
-                          setCurrDeviceId(device_id);
+                          //if(oldPlaybackId.current === null || oldPlaybackId.current === "No-device-active" || (oldPlaybackId.current !== device_id && newPlaybackId.current !== device_id)) {
+                          //      oldPlaybackId.current = device_id;
+                          //}
+                          //setCurrDeviceId(device_id);
 
                           console.log(`value of deviceId for the remote device is: ${device_id}`);
 
@@ -447,7 +447,7 @@ export default function SpotifyPLayer(){
 
             // Cleanup on component unmount
             return () => {
-                if(!disableWebSocket){
+                if(!disableWebSocket && ws){
                    // wsRefDispatch({
                    //     type: 'enabled',
                    //     wsRef: null
@@ -455,7 +455,7 @@ export default function SpotifyPLayer(){
                    ws.close();
                 }
             };
-    },[disableWebSocket]);
+    },[disableWebSocket, currStage]);
 
 
 
@@ -518,15 +518,30 @@ export default function SpotifyPLayer(){
         setCurrStatus(prev=>0);
     }
 
-    const isInActive = metaData.name === "No music playing right now!" || metaData.name === "It seems Atharv is listening to a podcast!" || oldPlaybackId.current === "No-device-active";
+    const isInActive = metaData.name === "No music playing right now!" || metaData.name === "It seems you are listening to a podcast!" || oldPlaybackId.current === "No-device-active";
+    const isPodcast = metaData.name === "It seems you are listening to a podcast!";
     //const prettyJson = JSON.stringify(metaData, undefined, 2);
     const isTrackInActive = currTrackMetaData.name === "No music playing right now!" || currTrackMetaData.name === "It seems Atharv is listening to a podcast!";
     const currMetaDataToBePassed = (keepInSync && !isInActive && !isTrackInActive) ? currTrackMetaData : metaData;
 
     console.log(`currTrackMetaData.duration_ms: ${currTrackMetaData.duration_ms}`);
-    const rendering = (((!initPlayer && newPlaybackActive) || loadingNextTrack || loadingPrevTrack || syncing || transferringPlayback || metaData.name === "No Name") || (!metaData.is_in_sync && keepInSync));
+    const rendering = ((loadingNextTrack || loadingPrevTrack || syncing || metaData.name === "No Name") || (!metaData.is_in_sync && keepInSync));
 
     console.log(`value of syncing is: ${syncing}`);
+
+    const [loginBtnDown, setLoginBtnDown] =  useState(false);
+
+    const loginBtnMouseDownHn = (e) => {
+        e.preventDefault();
+        setLoginBtnDown(prev=>true);
+        document.addEventListener("mouseup", loginBtnMouseUpHn);
+    }
+
+    const loginBtnMouseUpHn = () => {
+        setLoginBtnDown(prev=>false);
+        document.removeEventListener("mouseup", loginBtnMouseUpHn);
+    }
+
 
     let currPlayerJsx = <> </>;
 
@@ -537,6 +552,7 @@ export default function SpotifyPLayer(){
                         (
                             <ErrorBanner
                                 errMsg={!errReported ? "Error! Click here to report! before Reboot": "Reported! Please Refresh."}
+                                errReported={errReported}
                                 onClickTrigger={
                                         ()=>{
                                             if(!reportingError){
@@ -550,7 +566,6 @@ export default function SpotifyPLayer(){
                         )
                 }
                 <div className="player-container">
-                        (
                             <RebootButton
                                  disabled={!errReported}
                                  setCurrStage={setCurrStage}
@@ -559,7 +574,6 @@ export default function SpotifyPLayer(){
                                  setErrReported={setErrReported}
                                  isTrack={false}
                             />
-                        )
                 </div>
                 </>;
             break;
@@ -567,28 +581,31 @@ export default function SpotifyPLayer(){
         case stages.MAIL:
            currPlayerJsx = <>
                 <div className="player-container">
-                    <EmailInput emailSent={emailSent} setEmailSent={setEmailSent}/>
+                    <EmailInput emailSent={emailSent} setEmailSent={setEmailSent} setCurrStage={setCurrStage}/>
                 </div>
             </>;
             break;
         case stages.OTP_UNVERIFIED:
             currPlayerJsx = <>
                 <div className="player-container">
-                    <OTPinput emailSent={emailSent} setEmailSent={setEmailSent}/>
+                    <OTPinput emailSent={emailSent} setEmailSent={setEmailSent} setCurrStage={setCurrStage}/>
                 </div>
                 </>;
             break;
         case stages.UNAPPROVED:
             currPlayerJsx = <>
                 <div className="player-container">
-                    <div className="approval-msg">Your approval is pending. check your mail for updates.</div>
+                    <div className="player-track">
+                        <div className="login-prompt">
+                            Admin Approval pending, check your mail for Approval. Refresh when approved.
+                        </div>
+                    </div>
                 </div>
                 </>;
             break;
         case stages.UNAUTHORIZED:
             currPlayerJsx = <>
                 <div className="player-container">
-                        <div className="player-container">
                             <div className="player-track">
                                 <div className="login-prompt">
                                     Authorize Spotify to sync your playback with Atharv...
@@ -615,7 +632,7 @@ export default function SpotifyPLayer(){
                             </div>
 
                             <div className="control-container">
-                                <a href="http://127.0.0.1:3000/api/spotify_login_once">
+                                <a href={`http://127.0.0.1:3000/api/spotify_login_once/authorize?session_id=${sessionId}`}>
                                     <button className="login-btn"
                                         onMouseDown={loginBtnMouseDownHn}
                                         style={{
@@ -634,7 +651,6 @@ export default function SpotifyPLayer(){
                                     </button>
                                 </a>
                             </div>
-                        </div>
                 </div>
                 </>;
             break;
@@ -697,6 +713,7 @@ export default function SpotifyPLayer(){
             break;
         case stages.ALL_CLEAR:
                 currPlayerJsx = <>
+                        <div className="player-container">
                             <Player
                                  rendering={rendering}
                                  currStatus={currStatus}
@@ -734,7 +751,7 @@ export default function SpotifyPLayer(){
                             />
                         </div>
 
-                {!isInActive && !isTrackInActive && !hidePlayerControls &&(
+                {!isInActive && !isTrackInActive && !hidePlayerControls && !isPodcast &&(
                 <PlayerControls
                     disabled={rendering || lockingOut || seeking}
                     currStatus={currStatus}
@@ -745,7 +762,7 @@ export default function SpotifyPLayer(){
                     setKeepInSync={setKeepInSync}
                 />)}
 
-                {isInActive && (
+                {isInActive  && !isPodcast && (
                 <div className="control-container">
                     <div className="open-spotify-msg">
                         <div className="open-spotify-msg-text">
@@ -753,110 +770,21 @@ export default function SpotifyPLayer(){
                         </div>
                     </div>
                 </div>)}
+
+                {isInActive  && isPodcast && (
+                <div className="control-container">
+                    <div className="open-spotify-msg">
+                        <div className="open-spotify-msg-text">
+                            Public Spotify APIs do not support podcasts at the moment...
+                        </div>
+                    </div>
+                </div>)}
+
+                </div>
                 </>;
 
     }
 
 
-
-
-
-
-    return (
-
-        <>
-            {
-                !hideError &&
-                    (
-                        <ErrorBanner
-                            errMsg={!errReported ? "Error! Click here to report! before Reboot": "Reported! Please Refresh."}
-                            onClickTrigger={
-                                    ()=>{
-                                        if(!reportingError){
-                                            (async ()=>{await sendEmailReport();})();
-                                        }
-                                    }
-                            }
-                            reporting={reportingError}
-                            isTrack={false}
-                        />
-                    )
-            }
-
-
-            <div className="player-container">
-                { !hideError ?
-                   (<OTPinput emailSent={emailSent} setEmailSent={setEmailSent}/>)
-                   (<EmailInput emailSent={emailSent} setEmailSent={setEmailSent}/>)
-                   // (
-                   //     <RebootButton
-                   //          disabled={!errReported}
-                   //          setHideError={setHideError}
-                   //          setErrReported={setErrReported}
-                   //          isTrack={false}
-                   //     />
-                   // )
-                    :
-                        (
-                            <>
-                            <Player
-                                 rendering={rendering}
-                                 currStatus={currStatus}
-                                 isInActive={isInActive}
-                                 isTrackInActive={isTrackInActive}
-                                 canSkipPrev={(!newPlaybackActive && metaData.can_skip_prev) || newPlaybackActive}
-                                 metaData={metaData}
-                                 activeDeviceId={newPlaybackActive ? "This-device" : "Other-device"}
-                                 deviceIds={deviceIds}
-                                 pauseTrackHandleOldAndNew={pauseTrackHandleOldAndNew}
-                                 resumeTrackHandleOldAndNew={resumeTrackHandleOldAndNew}
-                                 nextTrack={nextTrack}
-                                 setLoadingNextTrack={setLoadingNextTrack}
-                                 prevTrack={prevTrack}
-                                 setLoadingPrevTrack={setLoadingPrevTrack}
-                                 seekTrack={seekTrack}
-                            />
-
-                        <div className="player-sep"
-                            style={{
-                                position: "absolute",
-                                width: "100%",
-                                top: "55.70%",
-                                left: "0%"
-                            }}
-                        >
-                            <hr
-                                style={{
-                                    border: "none",
-                                    height: "2px",
-                                    width: "100%",
-                                    backgroundColor: "#000000",
-                                    margin: "0"
-                                }}
-                            />
-                        </div>
-
-                {!isInActive && !isTrackInActive && !hidePlayerControls &&(
-                <PlayerControls
-                    disabled={rendering || lockingOut || seeking}
-                    currStatus={currStatus}
-                    setCurrStatus={setCurrStatus}
-                    syncTrack={syncTrack}
-                    lockTrack={lockTrack}
-                    lockOutTrack={lockOutTrack}
-                    setKeepInSync={setKeepInSync}
-                />)}
-
-                {isInActive && (
-                <div className="control-container">
-                    <div className="open-spotify-msg">
-                        <div className="open-spotify-msg-text">
-                            Seems like spotify is offline. May be open the app on your mobile?
-                        </div>
-                    </div>
-                </div>)}
-                </>)}
-            </div>
-        </>
-      )
+    return currPlayerJsx;
 }
