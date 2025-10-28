@@ -16,7 +16,7 @@ import spotify_icon from './static/images/spotify-icon.png';
 async function fetchAccessToken(sessionId){
         const params = new URLSearchParams();
         params.append('session_id', sessionId);
-        const resp = await fetch(`http://127.0.0.1:3000/api/fresh_token?${params.toString()}`, {
+        const resp = await fetch(`https://unmei.space/api/fresh_token?${params.toString()}`, {
             method: "GET"
         });
         const token = await resp.json();
@@ -86,7 +86,7 @@ export default function SpotifyPLayer(){
         //const deviceId = (newPlaybackActive ? newPlaybackId.current : oldPlaybackId.current);
         //params.append('device_id', deviceId);
         setSyncing(prev=>true);
-        const resp = await fetch(`http://127.0.0.1:3000/api/sync_track?${params.toString()}`);
+        const resp = await fetch(`https://unmei.space/api/sync_track?${params.toString()}`);
         // only after the above fetch has been done
         if (!resp.ok){
             //throw new Error("first fetch to play a new track failed!");
@@ -115,7 +115,7 @@ export default function SpotifyPLayer(){
         const params = new URLSearchParams();
         params.append('session_id', sessionId); // this is a global defined in thymeleaf "hello-world" templates...
         //setSyncing(prev=>true);
-        const resp = await fetch(`http://127.0.0.1:3000/api/lock_track?${params.toString()}`);
+        const resp = await fetch(`https://unmei.space/api/lock_track?${params.toString()}`);
         // only after the above fetch has been done
         if (!resp.ok){
             //throw new Error("first fetch to play a new track failed!");
@@ -138,7 +138,7 @@ export default function SpotifyPLayer(){
         const params = new URLSearchParams();
         params.append('session_id', sessionId); // this is a global defined in thymeleaf "hello-world" templates...
         setLockingOut(prev=>true);
-        const resp = await fetch(`http://127.0.0.1:3000/api/lock_out_track?${params.toString()}`);
+        const resp = await fetch(`https://unmei.space/api/lock_out_track?${params.toString()}`);
         // only after the above fetch has been done
         if (!resp.ok){
             //throw new Error("first fetch to play a new track failed!");
@@ -168,7 +168,7 @@ export default function SpotifyPLayer(){
         const params = new URLSearchParams();
         params.append('session_id', sessionId);
         // TODO: something to return from this request
-        const resp = await fetch(`http://127.0.0.1:3000/api/next_track?${params.toString()}`);
+        const resp = await fetch(`https://unmei.space/api/next_track?${params.toString()}`);
         if(!resp.ok){
             //throw new Error("fetch to play the next track didn't work");
             const errContent = await resp.json();
@@ -197,7 +197,7 @@ export default function SpotifyPLayer(){
         const params = new URLSearchParams();
         params.append('session_id', sessionId);
         // TODO: something to return from this request
-        const resp = await fetch(`http://127.0.0.1:3000/api/prev_track?${params.toString()}`);
+        const resp = await fetch(`https://unmei.space/api/prev_track?${params.toString()}`);
         if(!resp.ok){
             //throw new Error("fetch to play the prev track didn't work");
             const errContent = await resp.json();
@@ -219,7 +219,7 @@ export default function SpotifyPLayer(){
         // this is to pause the track in the old playback of the device via spotify web api
         const params = new URLSearchParams();
         params.append('session_id', sessionId);
-        const resp = await fetch(`http://127.0.0.1:3000/api/pause_track?${params.toString()}`);
+        const resp = await fetch(`https://unmei.space/api/pause_track?${params.toString()}`);
         if(!resp.ok){
             //throw new Error("fetch to puase the track didn't work");
             const errContent = await resp.json();
@@ -242,7 +242,7 @@ export default function SpotifyPLayer(){
         const params = new URLSearchParams();
         params.append('session_id', sessionId);
         params.append('device_id', oldPlaybackId.current);
-        const resp = await fetch(`http://127.0.0.1:3000/api/resume_track?${params.toString()}`);
+        const resp = await fetch(`https://unmei.space/api/resume_track?${params.toString()}`);
         if(!resp.ok){
             //throw new Error("fetch to resume the track didn'tm work");
             const errContent = await resp.json();
@@ -276,7 +276,7 @@ export default function SpotifyPLayer(){
         const params = new URLSearchParams();
         params.append('session_id', sessionId);
         params.append('seek_ms', seekMs);
-        const resp = await fetch(`http://127.0.0.1:3000/api/seek_track?${params.toString()}`);
+        const resp = await fetch(`https://unmei.space/api/seek_track?${params.toString()}`);
         if(!resp.ok){
             //throw new Error("fetch to resume the track didn't work");
             const errContent = await resp.json();
@@ -477,7 +477,7 @@ export default function SpotifyPLayer(){
         formData.append("errContentApiName", errContentToSend.API_NAME);
         formData.append("errContentStackTrace", errContentToSend.stacktrace);
 
-        const resp = await fetch(`http://127.0.0.1:3000/api/send_err_report?${params.toString()}`, {
+        const resp = await fetch(`https://unmei.space/api/send_err_report?${params.toString()}`, {
             method: 'POST',
             body: formData
         });

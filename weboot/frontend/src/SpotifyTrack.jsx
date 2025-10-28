@@ -140,7 +140,7 @@ export default function SpotifyTrack() {
         formData.append("errContentApiName", errContentToSend.API_NAME);
         formData.append("errContentStackTrace", errContentToSend.stacktrace);
 
-        const resp = await fetch(`http://127.0.0.1:3000/api/send_err_report?${params.toString()}`, {
+        const resp = await fetch(`https://unmei.space/api/send_err_report?${params.toString()}`, {
             method: 'POST',
             body: formData
         });

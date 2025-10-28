@@ -29,7 +29,7 @@ export default function EmailInput({emailSent, setEmailSent, setCurrStage}){
         const formData = new FormData();
         formData.append('email', emailId);
         currEmailGlobal = emailId; // to be returned from backend
-        const resp = await fetch("http://127.0.0.1:3000/api/send_mail_reg", {
+        const resp = await fetch("https://unmei.space/api/send_mail_reg", {
             method: 'POST',
             body: formData
         });

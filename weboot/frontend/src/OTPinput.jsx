@@ -67,7 +67,7 @@ export default function OTPinput({emailSent, setEmailSent, setCurrStage}){
         formBody.append("d3", d3);
         formBody.append("d4", d4);
         formBody.append("emailId", currEmailGlobal);
-        const resp = await fetch("http://127.0.0.1:3000/api/verify_otp", {
+        const resp = await fetch("https://unmei.space/api/verify_otp", {
             method: 'POST',
             body: formBody
         });
@@ -102,7 +102,7 @@ export default function OTPinput({emailSent, setEmailSent, setCurrStage}){
         const formBody = new FormData();
         formBody.append("emailId", currEmailGlobal);
 
-        const resp = await fetch("http://127.0.0.1:3000/api/resend_otp", {
+        const resp = await fetch("https://unmei.space/api/resend_otp", {
             method: "POST",
             body: formBody
         });

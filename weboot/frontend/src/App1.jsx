@@ -26,7 +26,7 @@ export default function App1({code, client_id, client_secret}){
             };
             const formBody = new URLSearchParams(data);
             // aim to proxy request to https://accounts.spotify.com/api/token
-            const resp = await fetch("http://127.0.0.1:3000/api/token", {
+            const resp = await fetch("https://unmei.space/api/token", {
                 method: "POST",
                 headers: {
                     'Content-Type':'application/x-www-form-urlencoded',
