@@ -2,15 +2,17 @@ const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const webpack = require("webpack");
 const ReactRefreshWebpackPlugin = require('@pmmmwh/react-refresh-webpack-plugin');
+const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
 
 module.exports = {
   mode: isDevelopment ? 'development' : 'production',
-  devtool: 'inline-source-map',
+  devtool: isDevelopment ? 'inline-source-map' : 'source-map',
 
-  devServer: {
+  devServer: isDevelopment ? {
       static: './dist',
       hot: true,
       host: '127.0.0.1',
@@ -21,30 +23,35 @@ module.exports = {
             target: 'http://127.0.0.1:8080/',
           },
           {
-            context: ['/ws1'], // Match the WebSocket endpoint
+            context: ['/ws1'],      // Match the WebSocket endpoint
             target: 'http://127.0.0.1:8080/',
             ws: true,               // Enable WebSocket proxying
             changeOrigin: true,     // Optional but often needed
           }
       ],
       historyApiFallback: true,
-  },
+  }: {},
 
   entry: {
     index: './src/root.js',
-    //print: './src/print.js',
   },
 
-    resolve: {
-        extensions: ['.js', '.jsx', '.ts', '.tsx'], // Add extensions your files might use
-    },
+  resolve: {
+      extensions: ['.js', '.jsx', '.ts', '.tsx'], // Add extensions your files might use
+  },
 
-  plugins: [isDevelopment && new ReactRefreshWebpackPlugin()].filter(Boolean),
+  plugins: [isDevelopment && new ReactRefreshWebpackPlugin(),
+    new MiniCssExtractPlugin({
+      filename: "[name].css",
+      chunkFilename: "[id].css",
+    })
+  ].filter(Boolean),
+
   output: {
     path: path.resolve(__dirname, 'dist'),
     clean: true,
     publicPath: '/',
-    filename: 'js/[name].js',
+      filename: 'js/[name].js',
   },
 
  optimization: {
@@ -59,13 +66,17 @@ module.exports = {
       },
     },
   },
+     minimizer: [
+        `...`,
+        new CssMinimizerPlugin(),
+     ]
   },
 
  module: {
     rules: [
       {
         test: /\.css$/i,
-        use: ['style-loader', 'css-loader'],
+        use: [MiniCssExtractPlugin.loader, 'style-loader', 'css-loader'],
       },
      {
         test: /\.(png|svg|jpg|jpeg|gif)$/i,

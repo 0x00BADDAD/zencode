@@ -1,16 +1,20 @@
+@media only screen
+    and (max-width: 430px)
+    and (max-height: 932px){
 
 .offline-banner{
     position: absolute;
     top: 0%;
     height: 8.72%;
     width: 100%;
+    z-index: 1;
     background-color: #5774D7;
 }
 
 .offline-banner-text{
     position: absolute;
-    top: 25%;
-    left: 40%;
+    top: 30%;
+    left: 20%;
     color: #FFFFFF;
     font-family: 'IBM', monospace;
 }
@@ -27,7 +31,7 @@
 .online-banner{
     position: absolute;
     top: 0%;
-    height: 8.72%;
+    height: 7%;
     width: 100%;
     background-color: #2CC93F;
     z-index: 1;
@@ -36,8 +40,8 @@
 
 .online-banner-text{
     position: absolute;
-    top: 25%;
-    left: 40%;
+    top: 30%;
+    left: 20%;
     color: #FFFFFF;
     font-family: 'IBM', monospace;
     z-index: 1;
@@ -46,9 +50,10 @@
 
 @font-face {
   font-family: 'IBM';
-  src: url('../static/fonts/IBMPlexMono-SemiBold.ttf') format('truetype');
+  src: url('../../static/fonts/IBMPlexMono-SemiBold.ttf') format('truetype');
 }
 
 
 
 
+}

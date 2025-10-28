@@ -3,7 +3,7 @@ import {useState, useRef, useEffect} from 'react';
 
 
 
-export default function ScrollingBanner({songName}){
+export default function ScrollingBanner({track, songName}){
 
       const parentRef = useRef(null);
       const childRef = useRef(null);
@@ -95,8 +95,8 @@ export default function ScrollingBanner({songName}){
 // 573.52px
 // 147.11px
     return (
-            <div className="song-name-container" ref={parentRef}>
-                    <div className="song-name-text" ref={childRef}>
+        <div className={track ? "song-name-container" : "player-song-name-container"} ref={parentRef}>
+            <div className={track ? "song-name-text" : "player-song-name-text"} ref={childRef}>
                         {songName}
                     </div>
             </div>

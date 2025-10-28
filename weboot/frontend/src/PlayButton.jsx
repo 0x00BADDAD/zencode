@@ -3,7 +3,7 @@ import play from './static/images/play.png';
 import pause from './static/images/pause.png';
 
 
-export default function PlayButton({disable, pauseHandler, resumeHandler, is_playing, isInActive}){
+export default function PlayButton({disable, track, pauseHandler, resumeHandler, is_playing, isInActive}){
     const [isPaused, setIsPaused] = useState(null);
     const [wasClicked, setWasClicked] = useState(false);
     console.log(`is_playing is: ${is_playing}`);
@@ -45,8 +45,9 @@ export default function PlayButton({disable, pauseHandler, resumeHandler, is_pla
         //console.log(`was here in PLAY button: isPaused: ${isPaused}`);
         btn = (isPaused) ? play : pause;
     }
+    const className = track ? (disable ? "pause-play-disabled-control": "pause-play") : (disable ? "player-pause-play-disabled-control": "player-pause-play");
     return (
-        <div className={disable ? "pause-play-disabled-control": "pause-play"} onClick={()=>{
+        <div className={className} onClick={()=>{
             if(!disable && !isInActive && !wasClicked){
                 setWasClicked(prev=>true);
                 clickHandler();

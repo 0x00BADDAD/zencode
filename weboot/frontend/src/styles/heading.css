@@ -1,0 +1,29 @@
+
+.heading-track{
+    position: absolute;
+    left: 31.14%;
+    top: 4%;
+    height: 10%;
+    width: 20%;
+    font-size: 2em;
+    font-family: 'Roboto';
+    font-weight: 600;
+}
+
+.heading-player{
+    position: absolute;
+    left: 31.14%;
+    top: 41%;
+    height: 10%;
+    width: 20%;
+    font-size: 2em;
+    font-family: 'Roboto';
+    font-weight: 600;
+}
+
+
+@font-face {
+  font-family: 'Roboto';
+  src: url('../static/fonts/Roboto-Regular.ttf') format('truetype');
+}
+

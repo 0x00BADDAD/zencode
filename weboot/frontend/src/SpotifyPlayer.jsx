@@ -60,7 +60,8 @@ export default function SpotifyPLayer(){
     const [errContentToSend, setErrContentToSend] = useState({API_NAME: "/api/some_api", stacktrace: "some huge JVM trace"});
     //const [playbackTransferred, setPlaybackTransferred] = useState(false);
 
-    const [currStage, setCurrStage] = useState(stageFromServer);
+    //const [currStage, setCurrStage] = useState(stageFromServer);
+    const [currStage, setCurrStage] = useState(stages.NOT_PREMIUM);
 
     const [prevStage, setPrevStage] = useState(null);
 
@@ -732,22 +733,9 @@ export default function SpotifyPLayer(){
                                  seekTrack={seekTrack}
                             />
 
-                        <div className="player-sep"
-                            style={{
-                                position: "absolute",
-                                width: "100%",
-                                top: "55.70%",
-                                left: "0%"
-                            }}
-                        >
+                        <div className="player-sep">
                             <hr
-                                style={{
-                                    border: "none",
-                                    height: "2px",
-                                    width: "100%",
-                                    backgroundColor: "#000000",
-                                    margin: "0"
-                                }}
+                                className="sep"
                             />
                         </div>
 

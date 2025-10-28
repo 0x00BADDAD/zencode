@@ -1,24 +1,26 @@
-.track{
+
+/*.track{
       position: absolute;
-      top: 10.75%;                /* push top edge to 50% of viewport height */
-      left: 31.15%;               /* push left edge to 50% of viewport width */
-      /*transform: translate(-50%, -50%);*/ /* adjust to truly center */
+      top: 10.75%;
+      left: 31.15%;
+      // comment this out for track transform: translate(-50%, -50%);
       width: 33.06%;
       height: 25.85%;
       background-color: #D9D9D9;
       border-radius: 10px;
       z-index:0;
-}
+}*/
+
 /* W: 1728 H: 1117*/
 :root {
   --box-height: 73.65%;
 }
 
-.cover-pic{
+.player-cover-pic{
     position: absolute;
     top: 6.02%;
     left: 0.95%;
-    height: 73.65%;
+    height: var(--box-height);
     /*width: 27.23%;*/
     aspect-ratio: 1;
     /*background-image: url('../static/images/starboy.png');
@@ -38,7 +40,7 @@ img {
 }
 
 
-.song-info{
+.player-song-info{
     position: absolute;
     top: 6.02%;
     left: 31.4%;
@@ -48,7 +50,7 @@ img {
     background-color: #D9D9D9;
 }
 
-.pause-play{
+.player-pause-play{
     position: absolute;
     top: 41.7%;
     left: 55.2%;
@@ -61,7 +63,7 @@ img {
     cursor: pointer;
 }
 
-.pause-play-disabled-control{
+.player-pause-play-disabled-control{
     position: absolute;
     top: 41.7%;
     left: 55.2%;
@@ -73,7 +75,7 @@ img {
     border-radius: 100px;
 }
 
-.timeline{
+.player-timeline{
     position: absolute;
     top: 82%;
     left: 33.63%;
@@ -87,7 +89,7 @@ img {
     cursor: pointer;
 }
 
-.timeline-pointer{
+.player-timeline-pointer{
     position: absolute;
     top: 50%;
     /*transform: translateY(-50%);*/
@@ -100,11 +102,11 @@ img {
     transition: transform 0.2s ease;
 }
 
-.timeline-pointer:hover{
+.player-timeline-pointer:hover{
     transform: translateY(-50%) scale(10);
 }
 
-.next-track{
+.player-next-track{
     position: absolute;
     top: 52.12%;
     left: 76.21%;
@@ -114,7 +116,7 @@ img {
     cursor: pointer;
 }
 
-.prev-track{
+.player-prev-track{
     position:absolute;
     left: 41%;
     top: 52.12%;
@@ -138,7 +140,7 @@ img {
   font-style: normal;
 }
 
-.song-name-container{
+.player-song-name-container{
     position: absolute;
     top: 0%;
     left: 0%;
@@ -152,7 +154,7 @@ img {
     /*border: 1px solid #ccc;*/
 }
 
-.song-name-container::after {
+.player-song-name-container::after {
   content: "";
   position: absolute;
   top: 0%;
@@ -169,7 +171,7 @@ img {
   );
 }
 
-.song-name-text{
+.player-song-name-text{
    /* width: 100%;*/
     position: absolute;
     display: inline-block;
@@ -208,7 +210,7 @@ img {
 }
 
 
-.artist-name{
+.player-artist-name{
     font-family: 'Instrument Sans', sans-serif;
     font-weight: 100;
     position: absolute;
@@ -224,7 +226,7 @@ img {
 
 
 
-.pane-container{
+/*.pane-container{
     position: absolute;
     left: 68.85%;
     top: 5.42%;
@@ -234,13 +236,16 @@ img {
     border-radius: 15px;
     z-index: 100;
     cursor: pointer;
-}
+}*/
 
 @font-face {
   font-family: 'IBM';
   src: url('../static/fonts/IBMPlexMono-SemiBold.ttf') format('truetype');
 }
 
+
+
+/* neglect these 2 classes, these are here from depcrated features */
 .pane-choice{
     position: absolute;
     font-family: 'IBM', monospace;
@@ -263,3 +268,4 @@ img {
     top: 31.25%;
     width: 12.87%;
 }
+

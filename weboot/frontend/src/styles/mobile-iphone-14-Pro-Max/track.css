@@ -1,0 +1,19 @@
+@media only screen
+    and (max-width: 430px)
+    and (max-height: 932px){
+
+
+
+    .track{
+          position: absolute;
+          top: 10.75%;                /* push top edge to 50% of viewport height */
+          left: 2.56%;               /* push left edge to 50% of viewport width */
+          /*transform: translate(-50%, -50%);*/ /* adjust to truly center */
+          width: 94.88%;
+          height: 17.81%;
+          background-color: #D9D9D9;
+          border-radius: 10px;
+          z-index:0;
+    }
+
+}
