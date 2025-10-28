@@ -35,7 +35,7 @@ export default function SpotifyTrack() {
         let ws = null;
         if(!disableWebSocket){
              // Connect to WebSocket server
-                ws = new WebSocket("ws://127.0.0.1:3000/ws1");
+                ws = new WebSocket("wss://unmei.space/ws1");
                 //setSocket(ws);
 
                 // When message is received

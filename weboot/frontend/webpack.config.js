@@ -50,7 +50,7 @@ module.exports = {
   output: {
     path: path.resolve(__dirname, 'dist'),
     clean: true,
-    publicPath: '/',
+    publicPath: '/assets',
       filename: 'js/[name].js',
   },
 

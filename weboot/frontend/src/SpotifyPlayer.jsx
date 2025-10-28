@@ -60,8 +60,8 @@ export default function SpotifyPLayer(){
     const [errContentToSend, setErrContentToSend] = useState({API_NAME: "/api/some_api", stacktrace: "some huge JVM trace"});
     //const [playbackTransferred, setPlaybackTransferred] = useState(false);
 
-    //const [currStage, setCurrStage] = useState(stageFromServer);
-    const [currStage, setCurrStage] = useState(stages.NOT_PREMIUM);
+    const [currStage, setCurrStage] = useState(stageFromServer);
+    //const [currStage, setCurrStage] = useState(stages.NOT_PREMIUM);
 
     const [prevStage, setPrevStage] = useState(null);
 
@@ -342,7 +342,7 @@ export default function SpotifyPLayer(){
         let ws = null;
         if(!disableWebSocket && currStage === stages.ALL_CLEAR){
                 //Connect to WebSocket server
-                ws = new WebSocket(`ws://127.0.0.1:3000/ws1?session_id=${sessionId}`);
+                ws = new WebSocket(`wss://unmei.space/ws1?session_id=${sessionId}`);
                 //setSocket(ws);
                 //When message is received
                 ws.onmessage = (event) => {
@@ -633,7 +633,7 @@ export default function SpotifyPLayer(){
                             </div>
 
                             <div className="control-container">
-                                <a href={`http://127.0.0.1:3000/api/spotify_login_once/authorize?session_id=${sessionId}`}>
+                                <a href={`https://unmei.space/api/spotify_login_once/authorize?session_id=${sessionId}`}>
                                     <button className="login-btn"
                                         onMouseDown={loginBtnMouseDownHn}
                                         style={{
