@@ -10,8 +10,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.ui.Model;
 
-import com.zencode.app.services.ActorService;
-import com.zencode.app.dao.beans.Actor;
 import java.util.List;
 import java.util.Random;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -78,9 +76,13 @@ import com.zencode.app.ws.handlers.MyHandler;
 import com.zencode.app.services.SendMailService;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
+import org.springframework.context.annotation.PropertySource;
+import org.springframework.core.env.Environment;
+
 
 @Controller
 @SessionAttributes({"csrfToken", "sessionId"})
+@PropertySource("file:/var/weboot/assets.properties")
 public class HelloController {
 
     @Autowired
@@ -91,6 +93,9 @@ public class HelloController {
 
     @Autowired
     private RedisCacheService cacheService;
+
+    @Autowired
+    private Environment env;
 
     @Autowired
     StringRedisTemplate redisTemplate;
@@ -119,7 +124,7 @@ public class HelloController {
 
     @GetMapping("/api/hello")
     public String handleHello(HttpServletRequest request, Model model) {
-        // if I do have the required cookies should redirect to the spotify login once
+        //if I do have the required cookies should redirect to the spotify login once
         //Cookie[] cookies = request.getCookies();
         //if(cookies != null){
         return "redirect:/api/spotify_login_once";
@@ -233,7 +238,33 @@ public class HelloController {
                 model.addAttribute("stageFromServer", stageCodes.get(currStage).intValue());
 
 
-                return "hello-world";
+                //boolean isDev = env.getProperty("is.dev");
+                boolean isDev = env.getProperty("is.dev").equals("dev");
+                model.addAttribute("isDev", isDev); // false when prod
+
+                // for the assets urls in the template
+                model.addAttribute("baseJsUrl", env.getProperty("base.js.url"));
+                model.addAttribute("baseCssUrl", env.getProperty("base.css.url"));
+                model.addAttribute("indexJsName", env.getProperty("index.js.name"));
+                model.addAttribute("runtimeJsName", env.getProperty("runtime.js.name"));
+                model.addAttribute("vendorsJsName", env.getProperty("vendors.js.name"));
+                if(!isDev){
+                    model.addAttribute("indexCssName", env.getProperty("index.css.name"));
+                }
+                return isDev ? "hello-world" : "hello-world-prod";
+
+                //boolean isDev = env.getProperty("is.dev");
+                //model.addAttribute("isDev", isDev); // false when prod
+
+                //// for the assets urls in the template
+                //model.addAttribute("baseUrl", env.getProperty("base.url"));
+                //model.addAttribute("indexJs", env.getProperty("index.js.url"));
+                //model.addAttribute("runtimeJs", env.getProperty("runtime.js.url"));
+                //model.addAttribute("vendorsJs", env.getProperty("vendors.js.url"));
+                //if(!isDev){
+                //    model.addAttribute("indexCss", env.getProperty("index.css.url"));
+                //}
+                //return isDev ? "hello-world" : "hello-world-prod";
             }
 
             // check if we got the cookies set and if we do, we also do a little validation
@@ -293,14 +324,52 @@ public class HelloController {
                 model.addAttribute("sessionId", sessionId);
                 logger.debug("setting stage from server as when cookies are valid: {}", currStage);
                 model.addAttribute("stageFromServer", stageCodes.get(currStage).intValue());
-                return "hello-world";
+
+
+                boolean isDev = env.getProperty("is.dev").equals("dev");
+                model.addAttribute("isDev", isDev); // false when prod
+
+                // for the assets urls in the template
+                model.addAttribute("baseJsUrl", env.getProperty("base.js.url"));
+                model.addAttribute("baseCssUrl", env.getProperty("base.css.url"));
+                model.addAttribute("indexJsName", env.getProperty("index.js.name"));
+                model.addAttribute("runtimeJsName", env.getProperty("runtime.js.name"));
+                model.addAttribute("vendorsJsName", env.getProperty("vendors.js.name"));
+                if(!isDev){
+                    model.addAttribute("indexCssName", env.getProperty("index.css.name"));
+                }
+                return isDev ? "hello-world" : "hello-world-prod";
+
+                // for the assets urls in the template
+                //model.addAttribute("baseUrl", env.getProperty("base.url"));
+                //model.addAttribute("indexJs", env.getProperty("index.js.url"));
+                //model.addAttribute("runtimeJs", env.getProperty("runtime.js.url"));
+                //model.addAttribute("vendorsJs", env.getProperty("vendors.js.url"));
+                //if(!isDev){
+                //    model.addAttribute("indexCss", env.getProperty("index.css.url"));
+                //}
+                //return isDev ? "hello-world" : "hello-world-prod";
             }else{
                 TrackMetadataBean initialTrackMetaData = trackMetaDataHolder.getData();
                 logger.debug("intialTrackMetaData is: " +initialTrackMetaData.toString());
                 model.addAttribute("initialTrackMetaData", initialTrackMetaData);
                 logger.debug("setting stage from server as : {}", "MAIL");
                 model.addAttribute("stageFromServer", stageCodes.get("MAIL").intValue());
-                return "hello-world";
+
+                //boolean isDev = env.getProperty("is.dev");
+                boolean isDev = env.getProperty("is.dev").equals("dev");
+                model.addAttribute("isDev", isDev); // false when prod
+
+                // for the assets urls in the template
+                model.addAttribute("baseJsUrl", env.getProperty("base.js.url"));
+                model.addAttribute("baseCssUrl", env.getProperty("base.css.url"));
+                model.addAttribute("indexJsName", env.getProperty("index.js.name"));
+                model.addAttribute("runtimeJsName", env.getProperty("runtime.js.name"));
+                model.addAttribute("vendorsJsName", env.getProperty("vendors.js.name"));
+                if(!isDev){
+                    model.addAttribute("indexCssName", env.getProperty("index.css.name"));
+                }
+                return isDev ? "hello-world" : "hello-world-prod";
             }
 ///////////////////////////////////////////////////////////////////////////////////////////////
 

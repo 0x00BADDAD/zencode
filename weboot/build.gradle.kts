@@ -19,9 +19,9 @@ tasks.bootJar {
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web") // includes spring-mvc
     implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
-    implementation("org.springframework.boot:spring-boot-starter-jdbc")
-    implementation("org.postgresql:postgresql:42.7.3")
-    implementation("com.zaxxer:HikariCP:5.1.0")
+    //implementation("org.springframework.boot:spring-boot-starter-jdbc")
+    //implementation("org.postgresql:postgresql:42.7.3")
+    //implementation("com.zaxxer:HikariCP:5.1.0")
 
     implementation("org.springframework.boot:spring-boot-starter-mail")
 
@@ -37,8 +37,8 @@ dependencies {
     implementation("org.apache.logging.log4j:log4j-api:2.20.0")
     //implementation("org.apache.logging.log4j:log4j-slf4j2-impl:2.20.0")
 
-    implementation("org.springframework.kafka:spring-kafka")
-    implementation("org.apache.kafka:kafka-streams")
+    //implementation("org.springframework.kafka:spring-kafka")
+    //implementation("org.apache.kafka:kafka-streams")
 
     //compileOnly("org.projectlombok:lombok:1.18.42")
     //annotationProcessor("org.projectlombok:lombok:1.18.42")

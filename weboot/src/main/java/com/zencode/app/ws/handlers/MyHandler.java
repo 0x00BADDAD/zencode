@@ -45,7 +45,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.net.URI;
 
 import com.zencode.app.services.RedisCacheService;
-import org.springframework.kafka.core.KafkaTemplate;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -70,8 +69,6 @@ public class MyHandler extends TextWebSocketHandler {
     @Autowired
     private ThreadPoolTaskScheduler scheduler;
 
-    @Autowired
-    private KafkaTemplate<String, TrackMetadataBean> KafkaTemplate;
 
     @Autowired
     private SyncTracksService syncTracksService;
@@ -132,7 +129,6 @@ public class MyHandler extends TextWebSocketHandler {
                 logger.debug("No song playing right now!");
                 TrackMetadataBean emptyBean = new TrackMetadataBean("No music playing right now!", List.of(), "No-track", "No-resource", 0, 0, false, 0, false, "No-device-active", "No-img-url", false, false, false, "");
                 //trackMetaDataHolder.setData(emptyBean);
-                //instead of sending the track updates to the web sockets, send it of the kafka topic
                 broadcastToSession(emptyBean, sessionId);
                 return;
             }
@@ -261,7 +257,6 @@ public class MyHandler extends TextWebSocketHandler {
                 //logger.debug("Song Name: "+ songName + " Artists: "+ artistsAll.toString());
                 //trackMetaDataHolder.setData(trackMetadataBean);
                 //UUID uniqueId = UUID.randomUUID();
-                //KafkaTemplate.send("spotify-track-topic", uniqueId.toString(), trackMetadataBean);
                 remoteMetaDataHolder.setData(trackMetadataBean);
                 broadcastToSession(trackMetadataBean, sessionId);
 
@@ -331,11 +326,9 @@ public class MyHandler extends TextWebSocketHandler {
                 logger.debug("No song playing right now!");
                 TrackMetadataBean emptyBean = new TrackMetadataBean("No music playing right now!", List.of(), "No-track", "No-resource", 0, 0, false, 0, false, "No-device-active", "No-img-url", false, false, false, "");
                 //trackMetaDataHolder.setData(emptyBean);
-                // instead of sending the track updates to the web sockets, send it of the kafka topic
                 remoteMetaDataHolder.setData(emptyBean);
                 broadcastToSession(emptyBean, sessionId);
                 //UUID uniqueId = UUID.randomUUID();
-                //KafkaTemplate.send("spotify-track-topic", uniqueId.toString(), emptyBean);
             }
         }catch(Exception e){
             StringWriter sw = new StringWriter();

@@ -37,7 +37,6 @@ import com.zencode.app.services.RedisCacheService;
 
 import org.springframework.web.bind.annotation.PathVariable;
 import com.zencode.app.shared.SharedTrackMetaDataHolder;
-import org.springframework.kafka.core.KafkaTemplate;
 import java.util.UUID;
 
 import java.io.PrintWriter;
@@ -56,8 +55,6 @@ public class SpotifyTasks {
     @Autowired
     private RedisCacheService redisCacheService;
 
-    @Autowired
-    private KafkaTemplate<String, TrackMetadataBean> KafkaTemplate;
 
 
 
@@ -151,7 +148,6 @@ public class SpotifyTasks {
                 trackMetaDataHolder.setData(trackMetadataBean);
                 myHandler.broadcast(trackMetadataBean);
                 //UUID uniqueId = UUID.randomUUID();
-                //KafkaTemplate.send("spotify-track-topic", uniqueId.toString(), trackMetadataBean);
 
             }else{
                 logger.debug("No song playing right now!");
@@ -159,7 +155,6 @@ public class SpotifyTasks {
                 trackMetaDataHolder.setData(emptyBean);
                 myHandler.broadcast(emptyBean);
                 //UUID uniqueId = UUID.randomUUID();
-                //KafkaTemplate.send("spotify-track-topic", uniqueId.toString(), emptyBean);
 
             }
         }catch (Exception e){
