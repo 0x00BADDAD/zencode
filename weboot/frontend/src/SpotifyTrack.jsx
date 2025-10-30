@@ -13,7 +13,7 @@ import play from './static/images/play.png';
 import pause from './static/images/pause.png';
 import next from './static/images/next.png';
 import record_img from './static/images/record_img.png';
-
+import {base_url, base_ws_url} from './url.js';
 
 export default function SpotifyTrack() {
     //const [currTrackUri, setCurrTrackUri] = useState('');
@@ -35,7 +35,7 @@ export default function SpotifyTrack() {
         let ws = null;
         if(!disableWebSocket){
              // Connect to WebSocket server
-                ws = new WebSocket("ws://127.0.0.1:3000/ws1");
+                ws = new WebSocket(`${base_ws_url}`);
                 //setSocket(ws);
 
                 // When message is received
@@ -140,7 +140,7 @@ export default function SpotifyTrack() {
         formData.append("errContentApiName", errContentToSend.API_NAME);
         formData.append("errContentStackTrace", errContentToSend.stacktrace);
 
-        const resp = await fetch(`http://127.0.0.1:3000/api/send_err_report?${params.toString()}`, {
+        const resp = await fetch(`${base_url}/api/send_err_report?${params.toString()}`, {
             method: 'POST',
             body: formData
         });
