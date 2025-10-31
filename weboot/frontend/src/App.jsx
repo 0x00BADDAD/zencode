@@ -12,13 +12,16 @@ import WsRefProvider from './Providers/WsRefProvider.jsx';
 import {DisableWebSocketContext} from './Contexts/DisableWebSocketContext.jsx';
 import spotify_icon from './static/images/spotify-icon.png';
 
-
-
+console.log(`NODE_ENV: ${process.env.NODE_ENV}`);
+if(process.env.NODE_ENV !== 'development'){
+    console.log = function no_console() {};
+}
 
 function App() {
     const disableWebSocket = useContext(DisableWebSocketContext);
     const [loginBtnDown, setLoginBtnDown] =  useState(false);
     const [isOffline, setIsOffline] = useState(false);
+
 
     const loginBtnMouseDownHn = (e) => {
         e.preventDefault();

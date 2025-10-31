@@ -3,14 +3,13 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const webpack = require("webpack");
 const ReactRefreshWebpackPlugin = require('@pmmmwh/react-refresh-webpack-plugin');
 
-const isDevelopment = process.env.NODE_ENV !== 'production';
+const isDevelopment = process.env.NODE_ENV === 'development';
 
 
 module.exports = {
-  mode: isDevelopment ? 'development' : 'production',
-  devtool: 'inline-source-map',
-
-  devServer: {
+  devtool: isDevelopment ? 'inline-source-map' : 'source-map',
+  stats: 'errors-only',
+  devServer: isDevelopment ? {
       static: './dist',
       hot: true,
       host: '127.0.0.1',
@@ -28,7 +27,7 @@ module.exports = {
           }
       ],
       historyApiFallback: true,
-  },
+  }: {},
 
   entry: {
     index: './src/root.js',
@@ -44,7 +43,7 @@ module.exports = {
     path: path.resolve(__dirname, 'dist'),
     clean: true,
     publicPath: '/',
-    filename: 'js/[name].js',
+      filename: isDevelopment ? 'js/[name].js' : 'js/[name].[contenthash].js',
   },
 
  optimization: {
@@ -84,7 +83,7 @@ module.exports = {
             options: {
               cacheDirectory: true,
               configFile: path.join(__dirname, './babel.config.js'),
-              plugins: [isDevelopment && require.resolve('react-refresh/babel')].filter(Boolean),
+              plugins: [isDevelopment && [require.resolve('react-refresh/babel'), { skipEnvCheck: true }]].filter(Boolean),
             },
           },
         ],
