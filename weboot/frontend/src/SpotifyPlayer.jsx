@@ -633,7 +633,7 @@ export default function SpotifyPLayer(){
                             </div>
 
                             <div className="control-container">
-                                <a href={`http://127.0.0.1:3000/api/spotify_login_once/authorize?session_id=${sessionId}`}>
+                                <a href={`${base_url}/api/spotify/authorize?session_id=${sessionId}`}>
                                     <button className="login-btn"
                                         onMouseDown={loginBtnMouseDownHn}
                                         style={{
