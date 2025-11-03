@@ -35,20 +35,21 @@ export default function Player({
     const perCent = ((metaData.progress_ms || 0) / metaData.duration_ms) * 100;
     const elapsedTimeSec = Math.ceil(metaData.progress_ms/1000);
     const totalTimeSec = Math.ceil(metaData.duration_ms/1000);
+
     return (rendering || !!(metaData.loadingNext)) ? (<LoadingBanner track={false} showReboot={false}/>) : (
         <div className="player-track">
-            {loadingCoverPic ? (<div className="loading-cover-pic"></div>) :
-                    (<div className="cover-pic"><img src={!isInActive ? metaData.img_url : record_img} onLoadStart={()=>setLoadingCoverPic(prev=>true)} onLoad={()=>setLoadingCoverPic(prev=>false)}/></div>)
+            {loadingCoverPic ? (<div className="player-loading-cover-pic"></div>) :
+                    (<div className="player-cover-pic"><img src={!isInActive ? metaData.img_url : record_img} onLoadStart={()=>setLoadingCoverPic(prev=>true)} onLoad={()=>setLoadingCoverPic(prev=>false)}/></div>)
             }
-            <div className="song-info">
-                <ScrollingBanner songName={metaData.name}/>
-                <div className="artist-name">{metaData.artists.reduce((acc, currArtist)=>{ if(acc){ return acc + ", " + currArtist;}else{ return currArtist}}, "")}</div>
+            <div className="player-song-info">
+                <ScrollingBanner track={false} songName={metaData.name}/>
+                <div className="player-artist-name">{metaData.artists.reduce((acc, currArtist)=>{ if(acc){ return acc + ", " + currArtist;}else{ return currArtist}}, "")}</div>
             </div>
             {/*!isInActive && <DevicePane deviceIds={deviceIds} activeDeviceId={activeDeviceId} transferNew={transferNewPlayback} transferOld={transferOldPlayback}/>*/}
-            <PlayButton disable={ifCurrStatusIsLockedIn || isInActive} pauseHandler={pauseTrackHandleOldAndNew} resumeHandler={resumeTrackHandleOldAndNew} is_playing={metaData.is_playing} isInActive={isInActive}/>
+            <PlayButton track={false} disable={ifCurrStatusIsLockedIn || isInActive} pauseHandler={pauseTrackHandleOldAndNew} resumeHandler={resumeTrackHandleOldAndNew} is_playing={metaData.is_playing} isInActive={isInActive}/>
 
 
-            <div className="next-track"
+            <div className="player-next-track"
                 style={{
                     opacity: `${(ifCurrStatusIsLockedIn && !isTrackInActive) || isInActive? "0.3" : "1"}`
                 }}
@@ -67,7 +68,7 @@ export default function Player({
                 }}>
                 <img src={next}/>
             </div>
-            <div className="prev-track"
+            <div className="player-prev-track"
                 style={{
                     opacity: `${(ifCurrStatusIsLockedIn&&!isTrackInActive) || isInActive || !canSkipPrev? "0.3" : "1"}`
                 }}
@@ -82,7 +83,7 @@ export default function Player({
                 <img src={next} style={{transform: "rotate(180deg)"}}/>
             </div>
 
-            <Slider elapsedTime={elapsedTimeSec} totalTime={totalTimeSec} isTrack={ifCurrStatusIsLockedIn || isInActive} seekTrack={seekTrack} isInActive={isInActive}/>
+            <Slider elapsedTime={elapsedTimeSec} track={false} totalTime={totalTimeSec} isTrack={ifCurrStatusIsLockedIn || isInActive} seekTrack={seekTrack} isInActive={isInActive}/>
             { /*<div className="timeline"></div>*/}
         </div>
     );

@@ -1,0 +1,16 @@
+/* 1179×2556 pixels at 460ppi */
+@media only screen
+    and (max-width: 430px)
+    and (max-height: 932px){
+
+/* styles for roughly 440x956 devices */
+    #root{
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 430px;
+      height: 932px;
+      background: linear-gradient(to bottom, #1db954, rgba(205, 227, 213, 0.78));
+    }
+}

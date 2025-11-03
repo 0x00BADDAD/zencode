@@ -17,12 +17,12 @@ export default function LoadingBanner({track, showReboot, errReported, setHideEr
             )
             :
             (
-                 <div className={track ? "loading-track" : "player-track"}>
-                     <div className="loading-cover-pic"></div>
-                     <div className="loading-song-name"></div>
-                     <div className="loading-artist-name"></div>
-                     <div className="loading-controls"></div>
-                     <div className="loading-timeline"></div>
+                 <div className={track ? "track" : "player-track"}>
+                     <div className={ track ? "loading-cover-pic" : "player-loading-cover-pic"}></div>
+                     <div className={ track ? "loading-song-name" : "player-loading-song-name"}></div>
+                     <div className={ track ? "loading-artist-name" : "player-loading-artist-name"}></div>
+                     <div className={ track ? "loading-controls" : "player-loading-controls"}></div>
+                     <div className={ track ? "loading-timeline" : "player-loading-timeline"}></div>
                  </div>
             )
 

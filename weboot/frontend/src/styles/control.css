@@ -469,6 +469,7 @@ input[type="number"] {
     align-items: center;
     z-index: 1;
     font-family: 'Roboto';
+    padding-left: 3%;
 }
 
 .email-input-label-focus{
@@ -484,11 +485,13 @@ input[type="number"] {
     font-size: 0.844em;
     font-family: 'Roboto';
     z-index: 1;
+    padding-left: 3%;
 }
 
 
 .email-input{
     position: absolute;
+    line-height: 33px;
     height: 55%;
     width: 90%;
     left: 5%;
@@ -505,8 +508,14 @@ input[type="number"] {
     display: flex;
     align-items: center;
     font-family: 'Roboto';
+    padding-left: 3%;
 }
 
+.email-input::before {
+  content: "";
+  display: inline-block;
+  height: 1em;
+}
 
 @font-face {
   font-family: 'Roboto';
@@ -517,8 +526,8 @@ input[type="number"] {
     position: absolute;
     height: 54%;
     width: 13%;
-    top: 34%;
-    left: 98%;
+    top: 33%;
+    left: 102%;
     background-color: white;
     border-radius: 5px;
     border: 1.3px solid #000000;

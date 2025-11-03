@@ -2,7 +2,7 @@ import {useState, useRef, useEffect} from 'react';
 
 
 
-export default function Slider({elapsedTime, totalTime, isTrack, seekTrack, isInActive}){
+export default function Slider({elapsedTime, track, totalTime, isTrack, seekTrack, isInActive}){
     console.log(`elapsedTime: ${elapsedTime} and totalTime: ${totalTime}`);
     let perCent = Math.ceil((elapsedTime / totalTime) * 100);
     const [isDragging, setIsDragging] = useState(false);
@@ -85,7 +85,7 @@ export default function Slider({elapsedTime, totalTime, isTrack, seekTrack, isIn
     //const perCent = (!isTrack && isDragging) ? (currElapse / totalTime) * 100 : (elapsedTime / totalTime) * 100;
 
     return (
-        <div ref={timelineRef} className="timeline" onClick={!isTrack ? onClickHandler: ()=>{}}
+        <div ref={timelineRef} className={track ? "timeline" : "player-timeline"} onClick={!isTrack ? onClickHandler: ()=>{}}
             style={{
                 cursor: `${isTrack? 'text': 'pointer'}`
             }}

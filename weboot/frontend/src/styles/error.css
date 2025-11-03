@@ -1,5 +1,18 @@
-.error-banner-player{
+
+
+.err-msg-holder{
     position: absolute;
+    top: 30%;
+    left: 36%;
+    width: 33.06%;
+    height: 15%;
+    font-family: 'IBM', monospace;
+}
+
+
+/************************************************************/
+.error-banner-player{
+   position: absolute;
     top: 44%;
     left: 31.14%;
     width: 33.06%;

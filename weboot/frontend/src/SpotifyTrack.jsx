@@ -200,7 +200,7 @@ export default function SpotifyTrack() {
                     (<div className="cover-pic"><img src={!isInActive ? metaData.img_url : record_img} onLoadStart={()=>setLoadingCoverPic(prev=>true)} onLoad={()=>setLoadingCoverPic(prev=>false)}/></div>)
             }
             <div className="song-info">
-                <ScrollingBanner songName={metaData.name}/>
+                <ScrollingBanner track={true} songName={metaData.name}/>
                 <div className="artist-name">{metaData.artists.reduce((acc, currArtist)=>{ if(acc){ return acc + ", " + currArtist;}else{ return currArtist}}, "")}</div>
             </div>
             {/*<DevicePane deviceIds={deviceIds}/>*/}
@@ -224,7 +224,7 @@ export default function SpotifyTrack() {
             /></div>
             <div className="next-track" style={{opacity: "0.3"}}><img src={next}/></div>
             <div className="prev-track" style={{opacity: "0.3"}}><img src={next} style={{transform: "rotate(180deg)"}}/></div>
-            <Slider elapsedTime={elapsedTimeSec} totalTime={totalTimeSec} perCent={Math.ceil(perCent)} isTrack={true} isInActive={isInActive}/>
+            <Slider elapsedTime={elapsedTimeSec} track={true} totalTime={totalTimeSec} perCent={Math.ceil(perCent)} isTrack={true} isInActive={isInActive}/>
             { /*<div className="timeline"></div>*/}
         </div>
     )) }
