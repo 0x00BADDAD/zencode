@@ -52,6 +52,7 @@ function App() {
                 <OfflineBanner isOffline={isOffline} />
                 <SpotifyTrack/>
                 {/*<SpotifyLogin/>*/}
+                <div className="heading-player">Your Spotify</div>
                 <SpotifyPlayer/>
                 {/*
                 userGrantedPermission ?

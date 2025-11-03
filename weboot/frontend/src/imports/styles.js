@@ -6,3 +6,4 @@ import "../styles/control.css";
 import "../styles/login.css";
 import "../styles/error.css";
 import "../styles/offline.css";
+import "../styles/heading.css";

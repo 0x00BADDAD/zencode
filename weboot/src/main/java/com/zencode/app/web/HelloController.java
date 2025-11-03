@@ -121,13 +121,23 @@ public class HelloController {
 
     private static final Logger logger = LogManager.getLogger(HelloController.class);
 
+    @GetMapping("/")
+    public String handleRoot(HttpServletRequest request, Model model) {
+        //if I do have the required cookies should redirect to the spotify login once
+        //Cookie[] cookies = request.getCookies();
+        //if(cookies != null){
+        return "redirect:/api/spotify";
+        //}
+
+        //return "hello-world";  // resolved as hello.html in templates directory
+    }
 
     @GetMapping("/api/hello")
     public String handleHello(HttpServletRequest request, Model model) {
         //if I do have the required cookies should redirect to the spotify login once
         //Cookie[] cookies = request.getCookies();
         //if(cookies != null){
-        return "redirect:/api/spotify_login_once";
+        return "redirect:/api/spotify";
         //}
 
         //return "hello-world";  // resolved as hello.html in templates directory
@@ -136,7 +146,7 @@ public class HelloController {
     // mailId -> approval status
     // sessionId -> email
 
-    @GetMapping("/api/spotify_login_once")
+    @GetMapping("/api/spotify")
     public String spotifyLoginOnce(HttpServletRequest request, HttpServletResponse response, @SessionAttribute(value = "csrfToken", required= false) String csrfToken, @SessionAttribute(value = "sessionId", required= false) String sessionIdFromAuth, @RequestParam(value = "code", required = false) String code, @RequestParam(value = "state", required = false) String csrfTokenRecd, Model model, SessionStatus status){
             // if we have valid active session cookie then we set the initialStageFromServer template variable
             // after fetching it from redis otherwise we prompt the user to do otp login and then accordingly
@@ -173,7 +183,7 @@ public class HelloController {
                 MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
                 formData.add("code", code);
                 formData.add("grant_type", "authorization_code");
-                formData.add("redirect_uri", "http://127.0.0.1:3000/api/spotify_login_once");
+                formData.add("redirect_uri", "http://127.0.0.1:3000/api/spotify");
 
                 RespClass resp = restClient.post()
                     .uri("https://accounts.spotify.com/api/token")
@@ -526,10 +536,10 @@ public class HelloController {
 //        }
 }
 
-    @GetMapping("/api/spotify_login_once/authorize")
+    @GetMapping("/api/spotify/authorize")
     public String handleAuthorize(@RequestParam("session_id") String sessionId, Model model){
             String clientId = "9469751d45ca49cea94be50c071a3c65";
-            String redirectUri = "http://127.0.0.1:3000/api/spotify_login_once";
+            String redirectUri = "http://127.0.0.1:3000/api/spotify";
             SecureRandom sr = new SecureRandom();
             byte[] bytes = new byte[16];
             sr.nextBytes(bytes);

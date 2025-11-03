@@ -168,6 +168,7 @@ export default function SpotifyTrack() {
     const totalTimeSec = Math.ceil(metaData.duration_ms/1000);
     return (
         <>
+            <div className="heading-track">Atharv's Spotify</div>
             {
                 !hideError &&
                     (

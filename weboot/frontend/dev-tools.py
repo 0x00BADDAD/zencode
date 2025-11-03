@@ -71,8 +71,8 @@ def main():
 
 
     origin_react_assets = pl.Path('./dist/')
-    for asset in origin_react_assets.iterdir():
-        shutil.move(asset, react_assets_path)
+    #for asset in origin_react_assets.iterdir():
+    shutil.copytree(origin_react_assets, react_assets_path, dirs_exist_ok=True)
     print(f"\n[{step}]moved all the react assets to target repo")
     step+=1
 
@@ -82,7 +82,13 @@ def main():
     print(f"\n[{step}]moved cwd to target repo...")
     step+=1
 
-    comp_proc = sp.run(['git', 'add', '.'], capture_output=True)
+    comp_proc = sp.run(['git', 'status'], capture_output=True, text=True)
+    if comp_proc.returncode != 0:
+        sys.exit(comp_proc.stderr)
+    print(f"\n[{step}]did a quick git status")
+    step+=1
+
+    comp_proc = sp.run(['git', 'add', '.'], capture_output=True, text=True)
     if comp_proc.returncode != 0:
         sys.exit(comp_proc.stderr)
     print(f"\n[{step}]added latest changes  in zencode-build to staging area...")
@@ -98,9 +104,9 @@ def main():
     pattern = r"(\[\d+\])(\[\d+\])"
     match = re.search(pattern, commit_msg)
     major_num_str = match.group(1)
-    major_num = int(major_num_str[1])
+    major_num = int(major_num_str[1:-1])
     minor_num_str = match.group(2)
-    minor_num = int(minor_num_str[1])
+    minor_num = int(minor_num_str[1:-1])
     new_major, new_minor = get_next_vers(major_num, minor_num)
     new_commit_msg = f"build version [{new_major}][{new_minor}]"
 

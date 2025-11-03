@@ -2,13 +2,15 @@ const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const webpack = require("webpack");
 const ReactRefreshWebpackPlugin = require('@pmmmwh/react-refresh-webpack-plugin');
+const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 
 const isDevelopment = process.env.NODE_ENV === 'development';
 
 
 module.exports = {
   devtool: isDevelopment ? 'inline-source-map' : 'source-map',
-  stats: 'errors-only',
+  mode: isDevelopment ? 'development' : 'production',
   devServer: isDevelopment ? {
       static: './dist',
       hot: true,
@@ -38,11 +40,19 @@ module.exports = {
         extensions: ['.js', '.jsx', '.ts', '.tsx'], // Add extensions your files might use
     },
 
-  plugins: [isDevelopment && new ReactRefreshWebpackPlugin()].filter(Boolean),
+  plugins: [
+    isDevelopment && new ReactRefreshWebpackPlugin(),
+    !isDevelopment &&
+        new MiniCssExtractPlugin({
+          filename: "[name].[contenthash].css",
+          chunkFilename: "[id].css",
+        })
+    ].filter(Boolean),
+
   output: {
     path: path.resolve(__dirname, 'dist'),
     clean: true,
-    publicPath: '/',
+      publicPath: isDevelopment ? '/' : '/assets/',
       filename: isDevelopment ? 'js/[name].js' : 'js/[name].[contenthash].js',
   },
 
@@ -64,7 +74,7 @@ module.exports = {
     rules: [
       {
         test: /\.css$/i,
-        use: ['style-loader', 'css-loader'],
+          use: [isDevelopment ? 'style-loader' : MiniCssExtractPlugin.loader, 'css-loader'],
       },
      {
         test: /\.(png|svg|jpg|jpeg|gif)$/i,
