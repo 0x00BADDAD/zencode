@@ -183,7 +183,11 @@ public class HelloController {
                 MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
                 formData.add("code", code);
                 formData.add("grant_type", "authorization_code");
-                formData.add("redirect_uri", "http://127.0.0.1:3000/api/spotify");
+
+                boolean isDev = env.getProperty("is.dev").equals("dev");
+                String baseUrl = isDev ? "http://127.0.0.1:3000" : "https://unmei.space";
+
+                formData.add("redirect_uri", baseUrl + "/api/spotify");
 
                 RespClass resp = restClient.post()
                     .uri("https://accounts.spotify.com/api/token")
@@ -539,7 +543,9 @@ public class HelloController {
     @GetMapping("/api/spotify/authorize")
     public String handleAuthorize(@RequestParam("session_id") String sessionId, Model model){
             String clientId = "9469751d45ca49cea94be50c071a3c65";
-            String redirectUri = "http://127.0.0.1:3000/api/spotify";
+            boolean isDev = env.getProperty("is.dev").equals("dev");
+            String baseUrl = isDev ? "http://127.0.0.1:3000" : "https://unmei.space";
+            String redirectUri = baseUrl + "/api/spotify";
             SecureRandom sr = new SecureRandom();
             byte[] bytes = new byte[16];
             sr.nextBytes(bytes);
